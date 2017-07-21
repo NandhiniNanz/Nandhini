@@ -1,0 +1,247 @@
+<apex:page controller="rzm.RZM_ConfigController" title="Configure" id="pgConfig" standardStylesheets="true" tabStyle="Asset">
+
+<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css"/>
+<script src="//code.jquery.com/jquery-1.9.1.js"></script>
+<script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+  <!--<apex:stylesheet src="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+  <apex:stylesheet src="https://jqueryui.com/resources/demos/style.css" />-->
+
+<script type= "text/javascript">
+
+function showPopUp()
+{         
+
+   
+    var useLatLong = document.getElementById("{!$Component.pgConfig:frmConfig:pgBlkConfig:pbsecGeoFld:sectId:outputCheckbox}").value;
+    
+    if(useLatLong == 'false')
+    {
+      
+   // $('my-selector').dialog('option', 'position', 'center');
+        $( '<div></div>' ).dialog({
+            resizable: false,
+            height:140,
+            modal: false,
+            open: function() {
+                 var markup = 'Do you want to start Address Clean and Geocoding now?';
+                 $(this).html(markup);
+            },
+            title: "Confirmation",
+            buttons: 
+            {
+                "Yes": function() 
+                {
+                     $( this ).dialog( "close" );
+                     executeGeocoding();
+                    
+                },
+                "No": function() 
+                {
+                      SaveConfigDetails();
+                 }
+            }
+        });
+       }        
+       else
+       {
+           var Leadlong =  document.getElementById("{!$Component.pgConfig:frmConfig:pgBlkConfig:pbsecAPIFlds:pbsecLeadLong:selLstLeadAPILong}").value;
+           var Leadlat =  document.getElementById("{!$Component.pgConfig:frmConfig:pgBlkConfig:pbsecAPIFlds:pbsecLeadLat:selLstLeadAPILat}").value;
+           if(Leadlat == null || Leadlat == 'None' || Leadlong == null || Leadlong == 'None')
+          {
+          
+           
+           // $('my-selector').dialog('option', 'position', 'center');
+            $( '<div></div>' ).dialog({
+            resizable: false,
+            height:140,
+            modal: false,
+            open: function() {
+                 var markup = 'Are You Using Lead object?';
+                 $(this).html(markup);
+            },
+            title: "Confirmation",
+            buttons: 
+            {
+                "Yes": function() 
+                {
+                     $( this ).dialog( "close" );
+                     SaveConfigDetails();
+                    
+                },
+                "No": function() 
+                {
+                      $( this ).dialog( "close" );
+                      SaveConfigDetailsWithoutLead();
+                 }
+            }
+        });
+        
+        }
+        else
+        {    
+           SaveConfigDetails();
+        }
+            
+       }
+}
+</script>
+    <apex:sectionHeader subtitle="Configuration Details" id="secConfig"/>
+    
+    <apex:form id="frmConfig">
+    <apex:pageMessages id="pgmsg"/>
+        <apex:actionFunction name="executeGeocoding" action="{!executeGeocoding}" rerender="outPnlAPIflds,pgmsg"/>
+        
+        <apex:actionFunction name="SaveConfigDetails" action="{!SaveConfigDetails}"  rerender="outPnlAPIflds,pgmsg"/>
+        
+        <apex:actionFunction name="SaveConfigDetailsWithoutLead" action="{!SaveConfigDetailsWithoutLead}"  rerender="outPnlAPIflds,pgmsg"/>
+    
+        <apex:pageBlock id="pgBlkConfig">
+            
+            <apex:pageBlockButtons location="Bottom">
+                
+                <apex:commandButton id="btnSaveConfig" value="Save"  onclick="showPopUp(); return false;" style="background: #4D91B3;color:white;"/>
+                <apex:commandButton action="{!Cancel}" id="btnCancel" value="Cancel" style="background: #4D91B3;color:white;"/>
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection title="GeoLocation Field Configuration" id="pbsecGeoFld" columns="1" collapsible="False" > 
+            <apex:panelGrid columns="3">
+                <apex:pageBlockSectionItem id="sectId" >
+                    <apex:outputLabel id="outLblField" value="GeoLocation Fields"/>                     
+                <apex:selectList value="{!isExistingField}" multiselect="false" size="1" id="outputCheckbox">
+                <apex:selectOption itemValue="false" itemLabel="Runzheimer Custom Fields"/>
+                <apex:selectOption itemValue="true" itemLabel="My Organization's Existing Fields"/>              
+               <apex:actionSupport event="onchange"  rerender="outPnlAPIflds" />  
+                </apex:selectList>                
+                </apex:pageBlockSectionItem> 
+                 &nbsp;&nbsp;&nbsp;&nbsp;
+                 <apex:outputLabel value="Select your source for Geolocation fields"  /> 
+                 </apex:panelGrid>
+            </apex:pageBlockSection>
+            
+           
+            <apex:outputPanel id="outPnlAPIflds">
+            
+                <apex:pageBlockSection id="pbsecAPIFlds" rendered="{!isExistingField}">
+                    <apex:pageBlockSectionItem id="pbsecAccLat">
+                        <apex:outputLabel value="Account GeoCode Lat API Name" id="outLblAccLat" >
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstAccAPILat" size="1" value="{!strAccLatAPI}" >
+                            <apex:selectOptions value="{!lstAccFields}" id="selOptAccLat"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem>                
+                    <apex:pageBlockSectionItem id="pbsecAccLong">
+                        <apex:outputLabel value="Account GeoCode Long API Name" id="outLblAccLong">
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstAccAPILong" size="1" value="{!strAccLongAPI}">
+                            <apex:selectOptions value="{!lstAccFields}" id="selOptAccLong"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="pbsecConLat">
+                        <apex:outputLabel value="Contact GeoCode Lat API Name" id="outLblConLat">
+                        </apex:outputLabel>                    
+                        <apex:selectList id="selLstConAPILat" size="1" value="{!strConLatAPI}">
+                            <apex:selectOptions value="{!lstConFields}" id="selOptConLat"/>
+                        </apex:selectList>                         
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="pbsecConLong">
+                        <apex:outputLabel value="Contact GeoCode Long API Name" id="outLblConLang">
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstConAPILong" size="1" value="{!strConLongAPI}">
+                            <apex:selectOptions value="{!lstConFields}" id="selOptConLong"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="pbsecLeadLat">
+                        <apex:outputLabel value="Lead GeoCode Lat API Name" id="outLblLeadLat">
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstLeadAPILat" size="1" value="{!strLeadLatAPI}" >
+                            <apex:selectOptions value="{!lstLeadFields}" id="selOptLeadLat"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="pbsecLeadLong">
+                        <apex:outputLabel value="Lead GeoCode Long API Name" id="outLblLeadLang">
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstLeadAPILong" size="1" value="{!strLeadLongAPI}" >
+                            <apex:selectOptions value="{!lstLeadFields}" id="selOptLeadLong"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem>
+                </apex:pageBlockSection>  
+            </apex:outputPanel> 
+                     
+            <!--<apex:pageBlockSection title="Batch Job Calls Configuration" id="pbsecBtchCall" collapsible="False">            
+                <apex:pageBlockSectionItem id="pbsecBtchJobCall">
+                    <apex:outputLabel id="outLblBtchCall" value="Number of Batch Job Calls">
+                    </apex:outputLabel>
+                    <apex:inputText id="inpTxtBtchCalls" value="{!intBatchCalls}"/>
+                </apex:pageBlockSectionItem> 
+                <apex:pageBlockSectionItem id="pbsecBtchJobHour">
+                    <apex:outputLabel id="outLblBtchHours" value="Batch Job Hours">
+                    </apex:outputLabel>
+                    <apex:inputText id="inpTxtBtchHours" value="{!intBatchHours}"/>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="pbsecBtchJobTime">
+                    <apex:outputLabel id="outLblBtchTime" value="Batch Job Time">
+                    </apex:outputLabel>
+                    <apex:inputText id="inpTxtBtchTime" value="{!strBatchTime}"/>
+                </apex:pageBlockSectionItem>   
+            </apex:pageBlockSection> -->
+            
+            <!--apex:pageBlockSection title="Itinerary Stop From Call Configuration" id="pbsecItnryCall" collapsible="False" columns="1">            
+                <apex:pageBlockSectionItem id="pbsecIsItnryStop">
+                    <apex:outputLabel id="outLblItinry" value="Do you want to create Itinerary Stop from Call?"/>
+                    <apex:inputCheckbox value="{!isItnryFrmCall}">
+                        <apex:actionSupport event="onchange" rerender="outPnlItnryStop" />           
+                    </apex:inputCheckbox>
+                </apex:pageBlockSectionItem>                
+            </apex:pageBlockSection>            
+            <apex:outputPanel id="outPnlItnryStop">
+                <apex:pageBlockSection id="pbsecItnryStop" rendered="{!isItnryFrmCall}">
+                    <apex:pageBlockSectionItem id="pbsecItnryType" >
+                        <apex:outputLabel id="outLblItnryType" value="Select Itinerary Stop Call Type">
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstItnryType" value="{!strItnryCallType}" multiselect="true">
+                            <apex:selectOptions value="{!CallType}" id="selOptItnryType"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem> 
+                </apex:pageBlockSection>
+            </apex:outputPanel-->
+            
+            <!--apex:pageBlockSection title="MileageLog From Call Configuration" id="pbsecMileageCall" collapsible="False">            
+                <apex:pageBlockSectionItem id="pbsecIsMileage">
+                    <apex:outputLabel id="outLblMileage" value="Do you want to create Mileage Log from Call?"/>
+                    <apex:inputCheckbox value="{!isMileageFrmCall}">
+                        <apex:actionSupport event="onchange" rerender="outPnlMileageLog" />           
+                    </apex:inputCheckbox>
+                </apex:pageBlockSectionItem>                
+            </apex:pageBlockSection>            
+            <apex:outputPanel id="outPnlMileageLog">
+                <apex:pageBlockSection id="pbsecMileageLog" rendered="{!isMileageFrmCall}">
+                    <apex:pageBlockSectionItem id="pbsecMileageType" >
+                        <apex:outputLabel id="outLblMileageType" value="Select Mileage Log Call Type">
+                        </apex:outputLabel>
+                        <apex:selectList id="selLstMileageType" value="{!strMileageCallType}" multiselect="true">
+                            <apex:selectOptions value="{!CallType}" id="selOptMileageType"/>
+                        </apex:selectList>                        
+                    </apex:pageBlockSectionItem> 
+                </apex:pageBlockSection>
+            </apex:outputPanel-->
+            
+            <!--apex:pageBlockSection title="Office Address Configuration" id="pbsecOffAddr" collapsible="False" columns="1">            
+                <apex:pageBlockSectionItem id="pbsecItmOffAddr">                    
+                    <apex:outputLabel value="Enter Office Address" id="outLblOffAddr">
+                    </apex:outputLabel>
+                    <apex:inputText value="{!strOfficeAddress}" id="inpFldOffAddr"/>                   
+                </apex:pageBlockSectionItem> 
+                <apex:pageBlockSectionItem id="pbsecItmIsOff">                    
+                    <apex:outputLabel value="Do you wish to include distance from Office to first Stop" id="outLblIsOff">
+                    </apex:outputLabel>
+                    <apex:inputCheckbox value="{!isOfficeToStop}" id="chkBxOffAddr"/>                   
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="pbsecItmIsStop">                    
+                    <apex:outputLabel value="Do you wish to include distance from last Stop to Office " id="outLblIsStop">
+                    </apex:outputLabel>
+                    <apex:inputCheckbox value="{!isStopToOffice}" id="chkBxOffAddr"/>                   
+                </apex:pageBlockSectionItem>               
+            </apex:pageBlockSection!-->
+        </apex:pageBlock>
+    </apex:form> 
+</apex:page>

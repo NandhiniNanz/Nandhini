@@ -1,0 +1,18 @@
+<apex:page standardController="Account">
+    <apex:form >
+    <apex:pageBlock >
+    <apex:pageBlockSection >
+    <apex:outputLabel value="Choose the Type of Account">
+    
+        <apex:inputField value="{!Account.Type}">
+       
+            <apex:actionSupport event="onchange" reRender="panel"/>
+        </apex:inputField>
+        <apex:outputPanel id="panel">
+            {!Account.Type}
+        </apex:outputPanel>
+        </apex:outputLabel>
+        </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

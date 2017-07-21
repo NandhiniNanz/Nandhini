@@ -1,0 +1,22 @@
+<apex:page standardController="Account" recordSetVar="accounts" >
+<apex:form >
+<apex:pageBlock title="View the Accounts">
+
+<apex:outputLabel Value=" Search Your Accounts">
+</apex:outputLabel>
+<apex:selectList value="{!filterId}" size="0">
+<apex:actionSupport event="onclick" reRender="list"/>
+<apex:selectOptions value="{!listviewoptions}">
+</apex:selectOptions>  
+
+</apex:selectList>
+<apex:pageBlockSection >
+<apex:dataList var="a" value="{!accounts}" id="list">
+{!a.name} 
+</apex:dataList>
+</apex:pageBlockSection>
+
+
+</apex:pageBlock>
+  </apex:form>
+</apex:page>

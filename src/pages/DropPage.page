@@ -1,0 +1,26 @@
+<apex:page StandardController="Opportunity" Extensions="Dropdowncontroller" >
+<apex:form >
+<apex:pageBlock title="Records">
+<apex:pageBlockButtons location="top">
+<apex:commandButton action="{!search}" value="Display" />
+</apex:pageBlockButtons>
+
+<apex:pageBlockSection >
+
+<apex:pageBlockTable value="{!listopp}" var="opp">
+
+<apex:selectOption value="{!StageName}">
+<apex:selectList value="{!selectedvalue}">
+
+
+
+
+</apex:selectList>
+
+</apex:selectOption>
+
+</apex:pageBlockTable>
+</apex:pageBlockSection>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

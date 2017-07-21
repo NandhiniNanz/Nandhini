@@ -1,0 +1,12 @@
+<apex:page Controller="Reqcontroller">
+<apex:form >
+<apex:pageBlock >
+
+<apex:commandButton action="{!fetchrecord}" value="Display"/>
+<apex:pageBlockTable value="{!listreq}" Var="req" >
+<apex:column value="{!req.Name}"/>
+<apex:column value="{!req.Type__c}"/>
+</apex:pageBlockTable>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

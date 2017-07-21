@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fields>
+        <fullName>Description__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>Description</label>
+        <length>32768</length>
+        <trackFeedHistory>false</trackFeedHistory>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Over_All_Description__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>Over All Description</label>
+        <length>32768</length>
+        <trackFeedHistory>false</trackFeedHistory>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>TFS_Bug_Id__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>TFS Bug Id</label>
+        <length>100</length>
+        <required>false</required>
+        <trackFeedHistory>false</trackFeedHistory>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>TFS_Projects__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>TFS Projects</label>
+        <picklist>
+            <picklistValues>
+                <fullName>Salesforce</fullName>
+                <default>false</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>ASP.NET</fullName>
+                <default>false</default>
+            </picklistValues>
+            <restrictedPicklist>true</restrictedPicklist>
+            <sorted>false</sorted>
+        </picklist>
+        <required>false</required>
+        <trackFeedHistory>false</trackFeedHistory>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+    </fields>
+    <fields>
+        <fullName>TFS_Template__c</fullName>
+        <deprecated>false</deprecated>
+        <externalId>false</externalId>
+        <label>TFS Template</label>
+        <picklist>
+            <picklistValues>
+                <fullName>Bug</fullName>
+                <default>true</default>
+            </picklistValues>
+            <picklistValues>
+                <fullName>User Story</fullName>
+                <default>false</default>
+            </picklistValues>
+            <restrictedPicklist>true</restrictedPicklist>
+            <sorted>false</sorted>
+        </picklist>
+        <required>true</required>
+        <trackFeedHistory>false</trackFeedHistory>
+        <trackHistory>false</trackHistory>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+    </fields>
+    <validationRules>
+        <fullName>PRLDE_SF_TFS_ValidateActiveCase</fullName>
+        <active>true</active>
+        <errorConditionFormula>AND(ISNEW(), ISPICKVAL(TFS_Template__c, &quot;Bug&quot;), NOT(ISPICKVAL( Status , &quot;Active&quot;)))</errorConditionFormula>
+        <errorDisplayField>Status</errorDisplayField>
+        <errorMessage>Please select a valid status</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>PRLDE_SF_TFS_ValidateCaseStatus</fullName>
+        <active>true</active>
+        <description>Rule to validate the status of case</description>
+        <errorConditionFormula>AND(ISCHANGED(Status),
+ISPICKVAL(TFS_Template__c, &quot;Bug&quot;) ,
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Active&quot;), ISPICKVAL(Status,&quot;Resolved&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Resolved&quot;), ISPICKVAL(Status,&quot;Closed&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Closed&quot;), ISPICKVAL(Status, &quot;Active&quot;)), False,
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Resolved&quot;), ISPICKVAL(Status,&quot;Active&quot;)), False,  
+True)))))</errorConditionFormula>
+        <errorDisplayField>Status</errorDisplayField>
+        <errorMessage>Please select valid status</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>PRLDE_SF_TFS_ValidateNewUserStory</fullName>
+        <active>true</active>
+        <description>Rule to validate user story status when creating</description>
+        <errorConditionFormula>AND(ISNEW(), ISPICKVAL( TFS_Template__c , &quot;User Story&quot;) , NOT(ISPICKVAL(Status , &quot;New&quot;)))</errorConditionFormula>
+        <errorDisplayField>Status</errorDisplayField>
+        <errorMessage>Status should be new when creating a user story</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>PRLDE_SF_TFS_ValidateTFSTemplate</fullName>
+        <active>true</active>
+        <errorConditionFormula>ISCHANGED( TFS_Template__c)</errorConditionFormula>
+        <errorDisplayField>TFS_Template__c</errorDisplayField>
+        <errorMessage>Template Cannot be Changed</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>PRLDE_SF_TFS_ValidateTemplateStatus</fullName>
+        <active>true</active>
+        <description>Validation rule to validate status based on template type</description>
+        <errorConditionFormula>AND(ISPICKVAL(TFS_Template__c, &apos;Bug&apos;), OR(ISPICKVAL(Status, &apos;New&apos;), ISPICKVAL(Status, &apos;Removed&apos;)))</errorConditionFormula>
+        <errorDisplayField>Status</errorDisplayField>
+        <errorMessage>Please select a valid status</errorMessage>
+    </validationRules>
+    <validationRules>
+        <fullName>PRLDE_SF_TFS_ValidateUserStoryStatus</fullName>
+        <active>true</active>
+        <description>To Validate the user story status</description>
+        <errorConditionFormula>AND(ISCHANGED(Status), 
+ISPICKVAL(TFS_Template__c, &quot;User Story&quot;) , 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Active&quot;), ISPICKVAL(Status,&quot;Closed&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Active&quot;), ISPICKVAL(Status,&quot;New&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Active&quot;), ISPICKVAL(Status,&quot;Resolved&quot;)), False, 
+
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Closed&quot;), ISPICKVAL(Status,&quot;Active&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Closed&quot;), ISPICKVAL(Status,&quot;New&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Closed&quot;), ISPICKVAL(Status,&quot;Resolved&quot;)), False, 
+
+
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Removed&quot;), ISPICKVAL(Status,&quot;New&quot;)), False, 
+
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;Resolved&quot;), NOT( ISPICKVAL(Status,&quot;Removed&quot;))), False, 
+
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;New&quot;), ISPICKVAL(Status,&quot;Active&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;New&quot;), ISPICKVAL(Status,&quot;New&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;New&quot;), ISPICKVAL(Status,&quot;Closed&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;New&quot;), ISPICKVAL(Status,&quot;Resolved&quot;)), False, 
+IF(AND(ISPICKVAL(PRIORVALUE(Status),&quot;New&quot;), ISPICKVAL(Status,&quot;Removed&quot;)), False, 
+
+True)
+
+)))))))))))))</errorConditionFormula>
+        <errorMessage>Please select valid status</errorMessage>
+    </validationRules>
+    <webLinks>
+        <fullName>PRLDE_UpsellCrosssellOpportunity</fullName>
+        <availability>online</availability>
+        <displayType>link</displayType>
+        <encodingKey>UTF-8</encodingKey>
+        <hasMenubar>true</hasMenubar>
+        <hasScrollbars>true</hasScrollbars>
+        <hasToolbar>true</hasToolbar>
+        <height>600</height>
+        <isResizable>true</isResizable>
+        <linkType>url</linkType>
+        <masterLabel>Up-sell / Cross-sell Opportunity</masterLabel>
+        <openType>newWindow</openType>
+        <position>none</position>
+        <protected>false</protected>
+        <showsLocation>true</showsLocation>
+        <showsStatus>true</showsStatus>
+        <url>https://na1.salesforce.com/opp/oppedit.jsp?accid={!Account.Id}&amp;opp3=Up-sell+/+Cross-sell&amp;opp5=Existing+Customer&amp;opp6=Customer+Support</url>
+    </webLinks>
+</CustomObject>

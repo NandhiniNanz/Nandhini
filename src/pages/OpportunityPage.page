@@ -1,0 +1,23 @@
+<apex:page standardcontroller="Opportunity">
+<apex:form >
+<apex:pageBlock title=" Opportunity Detail">
+<apex:pageBlockSection >
+
+<apex:inputField value="{!Opportunity.Name}"/> 
+<apex:inputField value="{!Opportunity.StageName}"/> 
+<apex:inputField value="{!Opportunity.CloseDate}"/> 
+<apex:inputField value="{!Opportunity.Amount}"/> 
+<apex:inputField value="{!Opportunity.NextStep}"/> 
+<apex:inputField value="{!Opportunity.Probability}"/> 
+<apex:inputField value="{!Opportunity.LeadSource}"/> 
+ 
+</apex:pageBlockSection>
+<apex:pageBlockButtons location="Top" >
+                <apex:commandButton action="{!save}" value="Save"/>
+                
+                <apex:commandButton action="{!Cancel}" value="Cancel"/>
+            </apex:pageBlockButtons>
+</apex:pageBlock>
+</apex:form>
+  
+</apex:page>

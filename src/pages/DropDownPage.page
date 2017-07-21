@@ -1,0 +1,11 @@
+<apex:page controller="DropDown">
+<apex:form >
+<apex:pageBlock title="Values">
+<apex:selectList size="1">
+<apex:selectOptions value="{!dynamiclist}">
+</apex:selectOptions>
+</apex:selectList>
+</apex:pageBlock>
+</apex:form>
+  
+</apex:page>

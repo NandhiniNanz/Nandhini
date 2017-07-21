@@ -1,0 +1,7 @@
+<apex:page standardController="Account">
+<apex:form >
+<apex:pageBlock title="Detail">
+<apex:commandButton action="{!SAVE}" value="Save"/>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

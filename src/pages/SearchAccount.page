@@ -1,0 +1,13 @@
+<apex:page Controller="Searchaccountcontroller">
+<apex:form >
+<apex:pageBlock title="Records">
+<apex:pageBlockSection >
+<apex:inputText value="{!Searchtext}" label="Enter the Name"/>
+<apex:actionPoller action="{!Searchtext}"/>
+</apex:pageBlockSection>
+<apex:pageBlockTable value="{!listacc}" var="acc" >
+<apex:column value="{!acc.Name}"/>
+</apex:pageBlockTable>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

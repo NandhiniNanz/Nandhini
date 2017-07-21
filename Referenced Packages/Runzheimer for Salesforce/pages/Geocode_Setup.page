@@ -1,0 +1,229 @@
+<apex:page id="page" title="rMobile Getting Started" controller="rzm.GeocodeSetup" readonly="false">
+<style type="text/css">
+    table.custom-fields {
+        width: 100%;
+    }
+    table.custom-fields td {
+        width: 24%;
+    }
+    .object-fields .table {
+        width: 100%;
+    }
+    .object-fields .table th {
+        padding: 3px;
+    }
+    .object-fields .table td {
+        padding: 3px;
+        border-bottom: 1px solid #ddd;
+        text-transform: capitalize;
+    }
+    .object-fields .field-selector {
+        width: 78%;
+        line-height: 25px;
+    }
+    .object-fields .add-field {
+        width: 15%;
+        margin: 0 inherit;
+        padding: 2px inherit;
+    }
+    .object-fields .loading-gif {
+        vertical-align: middle;
+        line-height: 25px;
+    }
+    .object-fields .status {
+        display: inline;
+        margin-left: 3%;
+    }
+    .object-fields .field-select {
+        margin: 5px 0;
+        height: 25px;
+    }
+</style>
+     <!-- Here is the css styles that will be used for the progress bars -->
+    <style>
+        .progressBar{
+            background-color: #f8f8f8;
+            border:1px solid #DDDDDD;
+            height: 19px;
+            width: 300px;
+            -moz-border-radius: 5px; 
+            -webkit-border-radius: 5px;
+        }
+        .progress{
+            background-color: #F7B64B;
+            border:1px solid #E78F08;
+            height: 100%;
+            margin: -1px;
+            text-align: center;
+            -moz-border-radius: 5px; 
+            -webkit-border-radius: 5px;
+            line-height: 18px;
+        }
+    </style>
+    <script type="text/javascript">
+     function startOrStop(btnId)
+    {
+     
+       var condition = document.getElementById(btnId).value; 
+        if(condition == 'Start GeoCoding')
+        {           
+            if(confirmStart())
+            {              
+                startGeocoding();                                       
+            } 
+            else
+            {  
+                return false;
+            }           
+        }
+        else
+        {
+           if(condition == 'Stop GeoCoding')
+            {         
+          
+                if(confirmStop())
+                {                   
+                    stopGeocoding();                
+                } 
+                else
+                {
+                    return false;
+                }
+            }           
+        }
+    
+    }
+    
+    function confirmStart()
+    {
+        return confirm('This will start geocoding batches for records that have not been geocoded. Are you sure?');
+       
+    }
+
+    function confirmStop()
+    {   
+        return confirm('This will stop geocoding batches prior to completion.Are you sure?');
+    }   
+
+    function confirmRefresh()
+    {
+        return confirm('This will clear all geocode information for the selected object.Are you sure?');
+    }
+    
+    
+</script>
+
+<apex:sectionHeader title="Runzheimer for Salesforce" subtitle="App Setup" help="https://www.runzheimer.com/Solutions/Runzheimer-Mobile-Route-Planning-Software.aspx"
+     description="Use this page to configure Itinerary Planning search filters and to control Geocoding."
+/>
+<apex:pageMessages id="messages"/>
+
+<apex:pageBlock title="Custom Filters" id="fields">
+<p>Configure fields that you want to make available to your users for filtering searches on the Itinerary Plan page. A user who do not have visibility to a field selected below will not be able to use that field as a search filter</p>
+<p></p>
+    <table class="custom-fields">
+        <tr>
+            <td><c:CustomFieldSelection sObject="Account"/></td>
+            <td><c:CustomFieldSelection sObject="Contact"/></td>
+            <td><c:CustomFieldSelection sObject="Lead"/></td>
+            <td><c:CustomFieldSelection sObject="Opportunity"/></td>
+        </tr>
+    </table>
+</apex:pageBlock>
+
+<apex:form rendered="{!isGeocodeRestricted}">
+<apex:actionFunction name="startGeocoding" action="{!startGeocoding}" immediate="true" reRender="btnId"/>
+<apex:actionFunction name="stopGeocoding" action="{!stopGeocoding}" immediate="true" reRender="btnId"/>
+<apex:pageBlock title="Geocoding" id="geocode">
+<p> You can start geocoding the addresses for the Accounts, Contacts and Leads by clicking the 'Start Geocoding'button. The estimated remaining time until completion will display next to each object.You are also able to Stop and Restart the geocoding  batch.</p>
+<p></p>
+    <apex:actionRegion >
+        <apex:outputPanel id="stats">
+            <apex:pageBlockSection title="Geocode Utilities" columns="1">             
+              
+                <apex:pageBlockTable value="{!records}" var="r" >               
+                    <apex:column headerValue="Object" width="10%" value="{!r.name}"/>  
+                    <apex:column width="25%" >                   
+                        <apex:facet name="header"> 
+                        <apex:commandButton onclick="startOrStop('{!$Component.btnId}');"   id="btnId" value="{!strBtnValue}" 
+                                       immediate="true"  reRender="jobs,buttons,batchJobFeedback,stats,btnId,AccntId,CntctId,LeadId" status="codeStatus">                        
+                        </apex:commandButton> 
+                        </apex:facet>
+                        
+                        <apex:outputPanel id="pnlButtons">
+                        <!--apex:outputText value="Cleaning is in Progress " id="AccntId" rendered="{!isCleaning}" /-->  
+                        <apex:outputText value="Cleaning is in Progress" id="AccntId" rendered="{!isCleaning &&  r.name == 'Account'}"/>                
+                       
+                        <apex:outputText value="Cleaning is in Progress" id="CntctId"  rendered="{!isCleaning  && r.name == 'Contact'}"/>                
+                        
+                        <apex:outputText value="Cleaning is in Progress" id="LeadId"  rendered="{!isCleaning  && r.name == 'Lead'}"/>               
+                         
+                     
+                       <apex:outputText value="Estimated Time Remaining: {0} Mins" id="OutputIdAccnt" rendered="{!isGeocoding && r.name == 'Account'}">                
+                        <apex:param value="{!AccntEstmtdTme}"/>
+                        </apex:outputText> 
+                        <apex:outputText value="Estimated Time Remaining: {0} Mins" id="OutputIdCntct"  rendered="{!isGeocoding && r.name == 'Contact'}">                
+                        <apex:param value="{!CntctEstmtdTme}"/>                             
+                        </apex:outputText> 
+                        <apex:outputText value="Estimated Time Remaining: {0} Mins" id="OutputIdLead"  rendered="{!isGeocoding && r.name == 'Lead'}">               
+                         <apex:param value="{!LeadEstmtdTme}"/>
+                        </apex:outputText>   
+                        </apex:outputPanel>                     
+                           
+                    </apex:column>
+                  
+                    <apex:column >
+                        <apex:outputPanel id="buttons" rendered="{!!isPersonAccountOrg}" >
+                            <apex:commandButton action="{!refreshRecords}" value="  Reset  " onclick="if(!confirmRefresh()) return false;" 
+                                reRender="jobs,buttons,batchJobFeedback,stats" status="codeStatus">
+                                <apex:param name="rName" value="{!r.name}"/>
+                            </apex:commandButton>&nbsp;&nbsp;
+                        </apex:outputPanel>
+
+                        <apex:outputPanel id="paButtons" rendered="{!isPersonAccountOrg}">
+                            <apex:commandButton action="{!refreshRecords}" value="  Reset  " onclick="if(!confirmRefresh()) return false;" 
+                                reRender="jobs,paButtons,batchJobFeedback,stats" disabled="{!totalRZMJobs!=null && totalRunningJobs>=10}" status="codeStatus" rendered="{!IF(r.name != 'Contact', true, false)}">
+                                <apex:param name="rName" value="{!r.name}"/>
+                            </apex:commandButton>&nbsp;&nbsp;
+                            <apex:outputText id="useAccounts" value="Contacts will be completed with accounts." rendered="{!IF(r.name != 'Contact', false, true)}" />
+                       </apex:outputPanel>
+                    </apex:column>
+                    
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+
+            <apex:outputPanel id="jobs">
+            <apex:pageBlockSection title="Batch Job Status" columns="1">
+            <p>The status of last 15 batch jobs are detailed below</p>
+
+            <apex:outputPanel rendered="{!totalRZMJobs!=null && totalRZMJobs>0}">
+            <!--apex:pageBlockTable value="{!jobs}" var="j"-->
+            <apex:pageBlockTable value="{!lstWrppr}" var="j">
+                <apex:column value="{!j.objApxJob.ApexClass.Name}" />
+                <apex:column value="{!j.objApxJob.Status}" />
+                <apex:column value="{!j.objApxJob.TotalJobItems}" />
+                <apex:column value="{!j.objApxJob.JobItemsProcessed}" />
+                <apex:column value="{!j.objApxJob.NumberOfErrors}" />
+                <apex:column value="{!j.strStatus}" headerValue="Status Detail"/>
+                <apex:column value="{!j.objApxJob.CreatedDate}" />
+                <apex:column value="{!j.objApxJob.CompletedDate}" />
+            </apex:pageBlockTable>
+            </apex:outputPanel>
+            </apex:pageBlockSection>
+            </apex:outputPanel>
+
+        </apex:outputPanel>
+
+        <apex:actionPoller action="{!RefreshEstimationTime}" interval="10" reRender="stats,pnlButtons,btnId,AccntId,CntctId,LeadId" status="status" />
+        <br/><br/>
+        <span style="font-style:italic;">&nbsp;&nbsp;Page refreshes every 10 seconds&nbsp;&nbsp;
+            <apex:actionstatus id="status">
+                <apex:facet name="start"><apex:image value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/img/spinner.gif')}" alt="" height="8" width="8" /></apex:facet>
+            </apex:actionstatus>
+
+        </span>
+    </apex:actionRegion>
+</apex:pageBlock>
+</apex:form>
+
+</apex:page>

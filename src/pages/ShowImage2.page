@@ -1,0 +1,3 @@
+<apex:page >
+ <apex:image url="{!URLFOR($Resource.Flower,'/rose.jpg')}"/>
+</apex:page>

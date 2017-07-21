@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
+    <columns>
+        <field>Job_Result__c.MethodName__c</field>
+    </columns>
+    <columns>
+        <field>Job_Result__c.ErrorMessage__c</field>
+    </columns>
+    <columns>
+        <field>Job_Result__c.Result__c</field>
+    </columns>
+    <columns>
+        <field>CUST_CREATED_NAME</field>
+    </columns>
+    <columns>
+        <field>CUST_CREATED_DATE</field>
+    </columns>
+    <filter>
+        <booleanFilter>1 OR 2</booleanFilter>
+        <criteriaItems>
+            <column>Job_Result__c.ErrorType__c</column>
+            <operator>contains</operator>
+            <value>Address Clean</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>Job_Result__c.ErrorType__c</column>
+            <operator>contains</operator>
+            <value>MapQuest</value>
+        </criteriaItems>
+    </filter>
+    <format>Summary</format>
+    <groupingsDown>
+        <dateGranularity>Day</dateGranularity>
+        <field>Job_Result__c.ErrorType__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <name>Address Cleaning &amp; Geocode Failures</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>CustomEntity$Job_Result__c</reportType>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <sortColumn>CUST_CREATED_DATE</sortColumn>
+    <sortOrder>Desc</sortOrder>
+    <timeFrameFilter>
+        <dateColumn>CUST_CREATED_DATE</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

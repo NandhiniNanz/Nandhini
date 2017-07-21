@@ -1,0 +1,5 @@
+<apex:page controller="MyBook" >
+    <apex:form >
+    <apex:pageBlock title="Detail">
+        </apex:pageBlock></apex:form>
+</apex:page>

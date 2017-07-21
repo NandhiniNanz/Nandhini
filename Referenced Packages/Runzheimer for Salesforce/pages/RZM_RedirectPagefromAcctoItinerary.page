@@ -1,0 +1,3 @@
+<apex:page controller="rzm.RZM_RedirfromAcctoItnryController" action="{!RedirecttoItineray}">
+  
+</apex:page>

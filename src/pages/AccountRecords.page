@@ -1,0 +1,16 @@
+<apex:page controller="SearchRecords">
+    <apex:form >
+        <apex:pageblock >
+            <apex:pageBlockSection >
+                <apex:inputText value="{!getstring}" id="theTextInput"/>
+                <apex:commandButton action="{!searchRecords}" value="Search" id="theSearch"/>
+            </apex:pageBlockSection>
+            <apex:outputPanel rendered="{!IF(createFriendList!=null, true, false)}">
+                <apex:pageBlocktable value="{!createFriendList}" var="records"> 
+                    <apex:column value="{!records.name}" headerValue="Account Name"/>
+                    <apex:column value="{!records.Comments__c}" headerValue="Comments"/>
+                </apex:pageBlocktable>
+            </apex:outputPanel>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,206 @@
+<apex:page standardController="rzm__Stop__c" extensions="rzm.RZM_addToItineraryExtension" tabStyle="RMobile_PlanPage__tab" sidebar="false" 
+                doctype="html-5.0" standardstylesheets="false" id="page">
+              
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/js/jquery-1.9.0.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/js/jquery-ui-1.10.0.custom.min.js')}" />             
+    <apex:stylesheet value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/css/jquery-ui-1.10.0.custom.min.css')}" />    
+    <apex:stylesheet value="{!URLFOR($Resource.rzm__AddToItinerary, '/html-AddToItinerary/css/bootstrap.min.css')}"/> 
+    <apex:stylesheet value="{!URLFOR($Resource.rzm__AddToItinerary, '/html-AddToItinerary/css/style.css')}"/>     
+    <apex:includeScript value="{!URLFOR($Resource.rzm__AddToItinerary, '/html-AddToItinerary/js/bootstrap.min.js')}"/> 
+    <apex:includeScript value="{!URLFOR($Resource.rzm__AddToItinerary, '/html-AddToItinerary/js/ddaccordion.js')}"/>
+
+<script type="text/javascript">
+var j = jQuery.noConflict();
+
+var app = {
+    initializeDate: function() {
+        var currentTime = new Date();
+        var month = currentTime.getMonth() + 1;
+        var day = currentTime.getDate();
+        var year = currentTime.getFullYear();
+        j('#datepicker').val(month + "/" + day + "/" + year);
+        
+    },
+    initDatePicker: function() {
+        j('#datepicker').click(function() {
+            j("#datepicker").datepicker({
+                onSelect: function() {
+                                  
+                   clickDay(j("#datepicker").val());
+                   clickDay(j("#datepicker").val()); // Must be done twice, weird.                  
+                }
+            }).focus();
+        });
+    }
+}
+
+j(document).ready(function(){ 
+     
+    app.initDatePicker();  
+    app.initializeDate();
+    var Itnrydate = j('#datepicker').val();
+    
+    clickDay(Itnrydate);
+});
+</script>
+
+<script type="text/javascript">
+ddaccordion.init({
+    headerclass: "submenuheader", //Shared CSS class name of headers group
+    contentclass: "submenu", //Shared CSS class name of contents group
+    revealtype: "click", //Reveal content when user clicks or onmouseover the header? Valid value: "click", "clickgo", or "mouseover"
+    mouseoverdelay: 200, //if revealtype="mouseover", set delay in milliseconds before header expands onMouseover
+    collapseprev: true, //Collapse previous content (so only one open at any time)? true/false 
+    defaultexpanded: [], //index of content(s) open by default [index1, index2, etc] [] denotes no content
+    onemustopen: false, //Specify whether at least one header should be open always (so never all headers closed)
+    animatedefault: false, //Should contents open by default be animated into view?
+    persiststate: true, //persist state of opened contents within browser session?
+    toggleclass: ["", ""], //Two CSS classes to be applied to the header when it's collapsed and expanded, respectively ["class1", "class2"]
+    togglehtml: ["suffix", "<img src='images/expand.png' class='statusicon' />", "<img src='images/collapse.png' class='statusicon' />"], //Additional HTML added to the header when it's collapsed and expanded, respectively  ["position", "html1", "html2"] (see docs)
+    animatespeed: "fast", //speed of animation: integer in milliseconds (ie: 200), or keywords "fast", "normal", or "slow"
+    oninit:function(headers, expandedindices){},
+    onopenclose:function(header, index, state, isuseractivated){}
+})
+
+
+</script>
+
+<title>Untitled Document</title>
+</head>
+<body>
+
+<apex:form id="frmAddItnry">
+
+    <apex:actionFunction action="{!chooseDay}"  name="clickDay" reRender="msgAddItnry">
+        <apex:param name="firstParam" id="ItnryDateParam" assignTo="{!dtItineraryDate}" value="" />
+    </apex:actionFunction>
+<div class="container">
+  <div class="row">
+    <div class="logo">
+        <apex:image url="{!URLFOR($Resource.rzm__AddToItinerary, '/html-AddToItinerary/images/logo.png')}" styleClass="img-responsive"/> 
+        <!--img class="img-responsive" src="images/logo.png"/-->
+    </div>
+     <apex:pageMessages id="msgAddItnry"/>  
+  </div>
+<apex:variable value="{!rzm__Stop__c}" var="s"/>
+  <div class="row">
+ 
+    <div class="col-md-12 spacing">
+      <div id="grad1" class="sec-bg">
+        <div class="row">
+          <div class="col-md-12 spacing">
+            <div class="col-md-3 col-xs-4 text-right spacing">
+              <p>Location Name :</p>             
+            </div>
+            <!--<div class="col-md-3 col-xs-4">-->
+            <div  class="col-md-9 col-xs-7 spacing">
+               <p><apex:outputField value="{!s.Name}"/></p>
+              <!--<p>MM home test 2</p>-->
+            </div>
+            <div class="clearfix"></div>
+          </div>
+          <div class="col-md-12 spacing">
+            <div class="col-md-3 col-xs-4 text-right spacing">
+              <p>Date :              
+                </p>
+            </div>              
+            <div class="col-md-4 col-xs-4">
+                <div class="calndr"><input type="text" style="width:100%;border-left: 5px solid red;" id="datepicker" value=""/></div>
+            </div>     
+           <!-- <div class="col-md-2 col-xs-2 spacing">
+              <p class="text-deco">[4/20/2015]</p>
+            </div>-->
+          </div>
+          <div class="clearfix"></div>
+          <div class="col-md-12 spacing">
+            <div class="col-md-3 col-xs-4 text-right spacing">
+                <apex:outputLabel value="Estimated Arrival"/>
+             </div>
+            
+            <div class="col-md-2 col-xs-3">
+             <apex:selectList value="{!hours}" multiselect="false" size="1" style="width:100%;">
+                        <apex:selectOptions value="{!hourItems}"/>
+                    </apex:selectList>
+            </div>
+            <div class="col-md-2 col-xs-3">
+             <apex:selectList value="{!minutes}" multiselect="false" size="1" style="width:100%;">
+                        <apex:selectOptions value="{!minuteItems}"/>
+                    </apex:selectList>
+            </div>
+            <div class="col-md-2 col-xs-8 spacing">
+              <p>(leave blank for timeless)</p>
+            </div>
+          </div>
+          <div class="clearfix"></div>
+          <div class="col-md-12 spacing">
+            <div class="col-md-3 col-xs-4 text-right spacing">
+              <apex:outputLabel value="Duration"/>
+            </div>
+            <div class="col-md-2 col-xs-3">
+                 <apex:selectList value="{!durationHours}" multiselect="false" size="1" style="width:100%;">
+                    <apex:selectOptions value="{!durationHourItems}"/>
+                </apex:selectList> 
+            </div>
+            <div class="col-md-2 col-xs-3">
+                <apex:selectList value="{!durationMinutes}" multiselect="false" size="1" style="width:100%;">
+                    <apex:selectOptions value="{!minuteItems}"/>
+                </apex:selectList>  
+            </div>
+          </div>
+          <div class="clearfix"></div>
+          <div class="col-md-12 spacing">
+            <div class="col-md-3 col-xs-4 text-right spacing">
+              <p>Comment : </p>
+            </div>
+            <div class="col-md-6 col-xs-6">
+              <!--<textarea class="form-control" rows="3"></textarea>-->
+              <apex:inputField value="{!s.rzm__Comment__c}"/>
+            </div>
+          </div>
+          <div class="clearfix"></div>
+          <div class="col-md-12 spacing">
+            <div class="col-md-3 col-xs-4 text-right spacing">
+              <p>Create Calendar Event?</p>
+            </div>
+            <div class="col-md-2 col-xs-3 spacing">
+              <apex:inputField id="isCalendarEvent" label="Create Calendar Event?" value="{!s.rzm__Calendar_Event__c}" />
+            </div>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <hr/>
+          </div>
+        </div>
+        <div class="row spacingb">
+          <div class="col-md-12">
+           <div class="col-md-6 col-sm-3 col-xs-12">
+            </div>
+            <div class="col-md-2 col-sm-3 col-xs-12 resp-spacing-top">
+              <!--<input style="background:#ef4e4e; color:#ffffff; border:none; padding:7px; white-space:normal; font-size:14px; width:100%;" value="Save and Return to Account" type="submit"/>-->
+              <apex:commandButton action="{!SaveItineraryAndReturn}" value="Save and Return to {!LocationType}" style="background:#ef4e4e; color:#ffffff; border:none; padding:7px; white-space:normal; font-size:14px; width:100%;" disabled="{!disableSave}"/>
+            </div>
+            <div class="col-md-2 col-sm-3 col-xs-12 resp-spacing-top">
+              <!--<input style="background:#ef4e4e; color:#ffffff; border:none; padding:7px; white-space:normal; font-size:14px; width:100%;" value="Save and Go to Itinerary Plan Page" type="submit"/>-->
+              <apex:commandButton action="{!SaveItineraryAndPlan}" value="Save and Go to Itinerary Plan Page" style="background:#ef4e4e; color:#ffffff; border:none; padding:7px; white-space:normal; font-size:14px; width:100%;" disabled="{!disableSave}"/>
+            </div>
+            <div class="col-md-2 col-sm-3 col-xs-12 resp-spacing-top">
+              <!--<input class="cancel-btn" style="background:#ef4e4e; color:#ffffff; border:none; white-space:normal; padding:17px; font-size:14px; width:100%;" value="Cancel" type="submit"/>-->
+              <apex:commandButton action="{!Cancel}" style="background:#ef4e4e; color:#ffffff; border:none; padding:17px; white-space:normal; font-size:14px; width:100%;" value="Cancel"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</apex:form>
+</body>
+
+</apex:page>

@@ -1,0 +1,11 @@
+<apex:page controller="Reqrecords">
+<apex:form >
+<apex:pageBlock >
+<apex:pageBlockTable value="{!records}" var="req">
+<apex:column value="{!req.Name}"/>
+<apex:column value="{!req.Type__c}"/>
+
+</apex:pageBlockTable>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

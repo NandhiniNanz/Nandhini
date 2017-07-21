@@ -1,0 +1,16 @@
+<apex:page standardController="Account" recordSetVar="accounts" >
+<apex:pageBlock >
+<apex:form >
+<apex:pageBlockSection >
+<apex:dataList value="{!accounts}" var="acc" type="1">
+{!acc.Name}
+</apex:dataList>
+</apex:pageBlockSection>
+<apex:panelGrid columns="2">
+<apex:commandLink action="{!previous}">Prev</apex:commandLink>
+</apex:panelGrid>
+</apex:form>
+</apex:pageBlock>
+
+ 
+</apex:page>

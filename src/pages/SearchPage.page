@@ -1,0 +1,12 @@
+<apex:page Controller="AccountsearchController"  >
+<apex:form >
+<apex:pageBlock title="Records">
+<apex:pageBlockSection >
+<apex:actionPoller action="{!searchtext}"/>
+</apex:pageBlockSection>
+<apex:pageBlockTable value="{!listacc}" var="acc" rendered="{!isshowrec}">
+<apex:column value="{!acc.Name}"/>
+</apex:pageBlockTable>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

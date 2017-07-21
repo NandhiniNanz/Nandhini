@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <icon>Runzheimer_Graphics/runzheimer_itineraryButton.png</icon>
+    <label>Itinerary</label>
+    <mobileReady>true</mobileReady>
+    <motif>Custom184: TV Widescreen</motif>
+    <page>RZM_RMobilePlanning_SF1</page>
+</CustomTab>

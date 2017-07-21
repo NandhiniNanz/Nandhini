@@ -1,0 +1,2056 @@
+<apex:page controller="rzm.RZM_rmobilePlanning_SF1" sidebar="false" doctype="html-5.0" tabStyle="RMobile_PlanPage__tab" 
+                            title="RMobile Planning Page" standardstylesheets="false" id="page">
+    <apex:form >
+        <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1"/>
+            <apex:includeScript value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/js/jquery-1.9.0.js')}" />
+            <apex:includeScript value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/js/jquery-ui-1.10.0.custom.min.js')}" />
+            <apex:includeScript value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/js/jquery.dataTables.min.js')}" />           
+            <apex:stylesheet value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/css/jquery-ui-1.10.0.custom.min.css')}" />
+            <apex:stylesheet value="{!URLFOR($Resource.rzm__RunzheimerAssets, '/css/jquery.dataTables.css')}" />           
+            <apex:includeScript value="https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key={!mapKey}"/>
+            <apex:includeScript value="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, '/js/mapController.js')}" />
+         
+            <apex:stylesheet value="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary,'css/bootstrap.min.css')}"/>
+            <apex:stylesheet value="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary,'css/style.css')}"/>
+            <apex:includeScript value="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary,'js/bootstrap.min.js')}" />
+            <apex:includeScript value="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary,'js/ddaccordion.js')}" />
+            <apex:includeScript value="{!URLFOR($Resource.rzm__JSCalendar,'calendar/calendar.js')}"/>
+            <apex:stylesheet value="{!URLFOR($Resource.rzm__JSCalendar,'calendar/calendar.css')}" />
+          
+            <style>
+            .col-md-2 select {
+            padding: 5px 20px 5px 0% !important; 
+            background: #FAE8E8 url("/resource/1435646909000/rzm__PreludeAssets_Itinerary/images/down-arrow.png") no-repeat scroll right center;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            -ms-appearance: none;
+            }
+            
+            select::-ms-expand {
+    display: none;
+}
+     .contrl_rit select{background: transparent url("/resource/1435646909000/rzm__PreludeAssets_Itinerary/images/down-arrow.png") no-repeat scroll right center;
+     -moz-appearance: none;
+     -webkit-appearance: none;
+     height: 35px;
+     border: 1px solid #ABABAB;}
+  
+            </style>
+
+           
+            <script type="text/javascript">
+                var j = jQuery.noConflict();
+                var app = {
+                    poiCollection: [],
+                    objectType: '',
+                    recordID: '',
+                    userRecord: '',
+                    showOnMap: false,
+                    zoomOnLoc: false,
+                    zoomLocId: undefined,
+                    zoomToLat: undefined,
+                    zoomToLat: undefined,
+                    initMap: function() {
+                        // Search listener
+                        j("input[name='searchAddress']").on('click', function(e) {
+                           // debugger;
+                            e.preventDefault();
+                            // Get search term
+                            // Start search
+                            app.geocode(j('#mySearch').val());
+                        })
+                        
+                        var currentTime = new Date()
+                        var month = currentTime.getMonth() + 1
+                        var day = currentTime.getDate()
+                        var year = currentTime.getFullYear()
+
+                        var lat,lon,anchorType,anchorId,content,infoContent;
+
+                        try {
+                            lat = app.getURLParam('lat');
+                        } catch(e) {lat = 39.527596;}
+
+                        try {
+                            lon = app.getURLParam('lon');
+                        } catch(e) {lon = -99.141968;}
+
+                        try {
+                            anchorType = app.getURLParam('type');
+                        } catch(e) {anchorType = 'Account';}
+
+                        try {
+                            anchorId = app.getURLParam('theId');
+                        } catch(e) {anchorId = null;}
+
+                        if (lat == 0 || lat == undefined || lat == 'null') lat = 39.527596;
+                        if (lon == 0 || lon == undefined || lon == 'null') lon = -99.141968;
+
+                        j('#myLat').val(lat);
+                        j('#myLong').val(lon);
+                        j('#datepicker').val(month + "/" + day + "/" + year);
+
+                        var addr = "{!JSENCODE($CurrentPage.parameters.adr)}";
+                        if(addr == '' || addr == 'null') j('#mySearch').val('');
+                        else j('#mySearch').val(addr);
+
+                        mapController.initMap('map');
+
+                        if (anchorId != null) {
+                            content = '<div style="width:180px;"><strong>{!$CurrentPage.parameters.adr}</strong></div>'
+                            infoContent = '<div style="width:180px;"><strong>'+'{!$CurrentPage.parameters.adr}'+'</strong><br/><br/><a href="#" onclick="app.addToItinerary(\''+anchorType+'\', \''+anchorId+'\', \'{!itinerary.OwnerId}\');return false;">Add to Itinerary</></div>';
+
+                            mapController.addPOICollection([{
+                                lat: lat,
+                                lng: lon,
+                                type: anchorType,
+                                rolloverContent: content,
+                                infoWindowContent: infoContent,
+                                zoom: 10
+                            }]);
+                        }
+                    },
+                    initDatePicker: function() {
+                    debugger;
+                        j('#datepicker').click(function() {
+                        debugger;
+                            j("#datepicker").datepicker({
+                                onSelect: function() {
+                                debugger;
+                                   j("#stop-detail").html('');
+                                   clickDay(j("#datepicker").val());
+                                    clickDay(j("#datepicker").val()); // Must be done twice, weird.
+                                   if (j("#divAssignedTo").text().trim() == null ||j("#divAssignedTo").text().trim()=='') 
+                                   {
+                                       j(".accordinClass").addClass("right-ul-height-top");
+                                    }
+                                    else
+                                    {
+                                     j(".accordinClass").removeClass("right-ul-height-top");
+                                    }  
+                                }
+                            }).focus();
+                        });
+                    },
+                    initOther: function() {
+                        var stopId = j( "#stopId" ),
+                        name = j( "#name" ),
+                        comments = j( "#comments" ),
+                        durationHour = j( "#durationHour" ),
+                        durationMinute = j( "#durationMinute" ),
+                        startHour = j( "#startHour" ),
+                        startMinute = j( "#startMinute" ),
+                        isCalendarEvent = j("#isCalendarEvent"),
+                        addFields = j( [] ).add( j( "#nameAdd" ) ).add( j( "#commentsAdd" ) ).add(j( "#durationHourAdd" )).add(j( "#durationMinuteAdd" )).add(j( "#startHourAdd" )).add(j( "#startMinuteAdd" )),
+                        allFields = j( [] ).add( name ).add( comments ).add(isCalendarEvent),
+                        tips = j( ".validateTips" );
+                        
+                        function updateTips( t ) {
+                            if(t != "") {
+                              tips
+                                .text( t )
+                                .addClass( "ui-state-highlight" )
+                                .css("color", "red")
+                                .css("display", "block");
+                            } else {
+                                tips
+                                .text( t )
+                                .removeClass( "ui-state-highlight")
+                                .css("display", "none");
+                            }
+                        }
+
+                        function checkLength( o, n, min, max ) {
+                          if ( o.val().length > max || o.val().length < min ) {
+                            o.addClass( "ui-state-error" );
+                            updateTips( "Length of " + n + " must be between " +
+                              min + " and " + max + "." );
+                            return false;
+                          } else {
+                            return true;
+                          }
+                        }
+
+                        function checkMaxLength( o, n, max ) {
+                          if ( o.val().length > max ) {
+                            o.addClass( "ui-state-error" );
+                            j("#comments").addClass('commentsError');
+                            j("#commentsAdd").addClass('commentsError');
+                            updateTips( "Length of " + n + " must be less than " +
+                              + max + "characters." );
+                            return false;
+                          } else {
+                            return true;
+                          }
+                        }
+
+                        function checkRegexp( o, regexp, n ) {
+                          if ( !( regexp.test( o.val() ) ) ) {
+                            o.addClass( "ui-state-error" );
+                            updateTips( n );
+                            return false;
+                          } else {
+                            return true;
+                          }
+                        }
+
+                        function validateCheckbox(o, sh, dh, dm) {
+                            if (!o.is(':checked')) {
+                                return true;
+                            } else {
+                                if(sh.val() == 'xxx' ||
+                                    dh.val() == 0 && dm.val() == 0) {
+
+                                    o.addClass( "ui-state-error" );
+                                    o.css('outline-color', 'red');
+                                    o.css('outline-style', 'solid');
+                                    o.css('outline-width', 'thin');
+
+                                    updateTips( "With 'Is Calendar Event' selected, the Stop must have an estimated arrival and duration." );
+                                    return false;
+                                } else {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        // For Add New Stop dialog modal    
+                        j( "#dialog-form-add" ).dialog({
+                            autoOpen: false,
+                            height: 550,
+                            width: 550,
+                            modal: true,
+                            buttons: {
+                                Create : function() {
+                                    allFields.removeClass( "ui-state-error" );
+
+                                    var validated = true;
+                                    validated = validated && checkMaxLength( j('#commentsAdd'), "the comments", 255 );
+                                    validated = validated && validateCheckbox(j('#isCalendarEventAdd'), j( "#startHourAdd" ), j( "#durationHourAdd" ), j( "#durationMinuteAdd" ));
+
+
+                                    if(validated) {
+                                        var localStartMinute = 00;
+
+                                        if(j( "#startMinuteAdd" ).val() != 'xxx') {
+                                            localStartMinute = j( "#startMinuteAdd" ).val();
+                                        }
+
+                                        app.addItineraryAndStop(objectType, recordID, userRecord, j( "#durationHourAdd" ).val(),
+                                            j( "#durationMinuteAdd" ).val(), j( "#commentsAdd" ).val(), j( "#startHourAdd" ).val(),
+                                            localStartMinute, j( "#isCalendarEventAdd" ).is(':checked'));
+
+                                        try {
+                                            j( this ).dialog( "close" );
+                                        }
+                                        catch (e) {}
+                                    }
+
+                                },
+                                Cancel: function() {
+                                    j( "#isCalendarEventAdd" ).prop('checked', false).removeAttr("style");
+                                    addFields.val( "" ).removeClass( "ui-state-error" );
+                                    updateTips('');
+                                    app.clearStopInfo();
+                                    
+                                    try {
+                                        j( this ).dialog( "close" );
+                                    }
+                                    catch (e) {}
+                                }
+                            },
+
+                            close: function() {
+                                j( "#isCalendarEventAdd" ).prop('checked', false).removeClass( "ui-state-error" ).removeAttr("style");
+                                addFields.val( "" ).removeClass( "ui-state-error" );
+                                updateTips('');
+                                app.clearStopInfo();
+                            },
+                        });
+
+                        j( "#dialog-form" ).dialog({
+                            autoOpen: false,
+                            height: 550,
+                            width: 550,
+                            modal: true,
+                            buttons: {
+
+                            "Save": function() {
+                              var bValid = true;
+                              allFields.removeClass( "ui-state-error" );
+
+                              bValid = bValid && checkMaxLength( comments, "the comments", 255 );
+                              bValid = bValid && validateCheckbox(isCalendarEvent, startHour, durationHour, durationMinute);
+
+                              if ( bValid ) {
+                                var localStartMinute = 00;
+
+                                if(startMinute.val() != 'xxx') {
+                                    localStartMinute = startMinute.val();
+                                }
+
+                                app.updateStop(stopId.val(), durationHour.val(), durationMinute.val(), comments.val(), startHour.val(), localStartMinute, isCalendarEvent.is(':checked'));
+
+                                j("#stop-detail").html('');
+                                
+                                try {
+                                    j( this ).dialog( "close" );
+                                }
+                                catch (e) {}
+                              }
+                            },
+                            Cancel: function() {
+                                j( "#isCalendarEvent" ).removeAttr("style");
+                                updateTips('');
+                                try {
+                                    j( this ).dialog( "close" );
+                                }
+                                catch (e) {}
+                            }
+                            },
+                            close: function() {
+                                j( "#isCalendarEvent" ).removeAttr("style");
+                                allFields.val( "" ).removeClass( "ui-state-error" );
+                                updateTips('');
+                            },
+
+                        });
+                        
+                         j(".btnSave").click(function(){
+                       
+                        var bValid = true;
+                          allFields.removeClass( "ui-state-error" );
+
+                          bValid = bValid && checkMaxLength( comments, "the comments", 255 );
+                          bValid = bValid && validateCheckbox(isCalendarEvent, startHour, durationHour, durationMinute);
+
+                          if ( bValid ) {
+                            var localStartMinute = 00;
+
+                            if(startMinute.val() != 'xxx') {
+                                localStartMinute = startMinute.val();
+                            }
+                             
+                            app.updateStop(stopId.val(), durationHour.val(), durationMinute.val(), comments.val(), startHour.val(), localStartMinute, isCalendarEvent.is(':checked'));
+
+                            //j("#stop-detail").html('');
+                            
+                            try {
+                                j( this ).dialog( "close" );
+                            }
+                            catch (e) { j( "#btnClose" ).trigger( "click" ); }
+                          }
+                        
+                        });
+                        
+                        
+                          j(".btnCreate").click(function(){
+                       
+                         allFields.removeClass( "ui-state-error" );
+
+                                    var validated = true;
+                                    validated = validated && checkMaxLength( j('#commentsAdd'), "the comments", 255 );
+                                    validated = validated && validateCheckbox(j('#isCalendarEventAdd'), j( "#startHourAdd" ), j( "#durationHourAdd" ), j( "#durationMinuteAdd" ));
+
+
+                                    if(validated) {
+                                        var localStartMinute = 00;
+
+                                        if(j( "#startMinuteAdd" ).val() != 'xxx') {
+                                            localStartMinute = j( "#startMinuteAdd" ).val();
+                                        }
+
+                                        app.addItineraryAndStop(objectType, recordID, userRecord, j( "#durationHourAdd" ).val(),
+                                            j( "#durationMinuteAdd" ).val(), j( "#commentsAdd" ).val(), j( "#startHourAdd" ).val(),
+                                            localStartMinute, j( "#isCalendarEventAdd" ).is(':checked'));
+
+                                       
+                                        try {
+                                            j( this ).dialog( "close" );
+                                        }
+                                        catch (e) { j( "#closeBttn" ).trigger( "click" ); }
+                                    }
+                            //j( "#closeBttn" ).trigger( "click" );
+                            //j( this ).dialog( "close" );                        
+                        });
+                        
+                        
+                        
+                        j('input[name="searchinput"]').keypress(function(e) {
+                            if(e.which == 13) app.geocode(j('#mySearch').val());
+                        });
+
+                        j(document).on("click", ".edit-stop", function() {
+                         j("#comments").removeClass("commentsError");
+                            j("#commentsAdd").removeClass("commentsError");
+                            j("#isCalendarEvent").prop('checked', false).removeClass( "ui-state-error" ).removeAttr("style");
+                            var addFields = j( [] ).add( j( "#name" ) ).add( j( "#comments" ) ).add(j( "#durationHour" )).add(j( "#durationMinute" )).add(j( "#startHour" )).add(j( "#startMinute" ));
+                            addFields.removeClass( "ui-state-error" );
+                            updateTips('');
+                        
+                            j( "#stopId" ).val( (j(this).attr('stopId')) );
+                            j( "#name" ).text( (j(this).attr('stopName')) );
+                            j( "#durationHour" ).val( (j(this).attr('stopDurationHour')) );
+                            j( "#durationMinute" ).val( (j(this).attr('stopDurationMinute')) );
+                            j( "#startHour" ).val( (j(this).attr('startHour')) );
+                            j( "#startMinute" ).val( (j(this).attr('startMinute')) );
+                            j( "#comments" ).val( (j(this).attr('stopComments')) );
+
+                            // Added default display of checkbox based on record being edited
+                            var startingChecked = j(this).attr('stopIsCalendarEvent');
+                            if(startingChecked == 'true') {
+                                j("#isCalendarEvent").prop('checked', true);
+                            } else {
+                                j("#isCalendarEvent").prop('checked', false);
+                            }
+                            
+                            //j( "#dialog-form" ).dialog( "open" );
+                        });
+
+                        j(document).on("click", ".detail-btn", function(){
+                            j("#stop-detail").html(j(this).attr('data-val'));
+                        });
+                    },
+                    initFilters: function() {
+                        app.setDefaultValues();
+                           //j('#mySearch').focus();                          
+                        
+                        // Default selection
+                        showSelected();
+
+                        // Listener for toggle                      
+                        j('select[name="sobject"]').on("change",function(i){
+                            //debugger;
+                            showSelected();
+                        });
+
+                        // Listend for filter add toggle
+                        j('.finder').on('click', '.show-filters', function(i) {
+                            j(this).prev().show();
+                            j(this).hide();
+                        });
+                        j('.finder').on('click', '.cancel-add-filter', function(i) {
+                            j(this).parent().next().show();
+                            j(this).parent().hide();
+                        });
+
+                        function showSelected() {
+                            // Get selected object                          
+                            var selected = j('select[name="sobject"] :selected').val();
+
+                            // Hide all
+                             j('.filter-set').hide();
+
+
+                            // Show panel
+                            j('.filter-set.' + selected).show();
+                        }
+                    },
+                    setDefaultValues: function() {
+                        if(app.getURLParam('radius') != '')
+                            j('select[name="resultRadius"]').val(app.getURLParam('radius'));
+
+                        if(app.getURLParam('limit') != '')
+                            j('select[name="resultLimit"]').val(app.getURLParam('limit'));
+
+                        if(app.getURLParam('radiusUnit') != '') {
+                            j('select[name="radiusUnit"]').val(app.getURLParam('radiusUnit'));                          
+                        }
+
+                        if(app.getURLParam('recordOwner') != '') {
+                            j('select[name="recordOwner"]').val(app.getURLParam('recordOwner'));
+                        }
+
+                        if(app.getURLParam('sobject') != '') {
+                            j('select[name="sobject"]').val(app.getURLParam('sobject'));                            
+                        }
+
+                        j('.search-param').each(function() {
+                            if(j(this).attr('type') == 'checkbox') {
+                                if(app.getURLParam(j(this).attr('name')) == 'true') j(this).is(':checked');
+                            } else {
+                                j(this).val(app.getURLParam(j(this).attr('name')));
+                            }
+                        });
+
+                        if(app.getURLParam('q') != '') {
+                            j('#mySearch').val(app.getURLParam('q'));
+                            app.geocode(app.getURLParam('q'));
+                        }
+                    },
+                    getURLParam: function(name) {
+                        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+                        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                        results = regex.exec(location.search);
+
+                        if(results === null) {
+                            return '';
+                        } else {
+                            var retVal = decodeURIComponent(results[1].replace(/\+/g, " "));
+                            if(retVal == 'null') return '';
+                            return retVal;
+                        }
+                    },
+                    geocode: function(address) {
+                        //console.log('-> Geocode');
+                        if(address == null || address == '') {
+                            j('#fade').fadeOut(100);
+                            alert('Please enter an address to center map');
+                            j('#responseErrors').text('Please enter an address to center map');
+                        } else {
+                            j('#fade').fadeIn(100);
+                            try {
+                                Visualforce.remoting.Manager.invokeAction(
+                                    '{!$RemoteAction.RZM_rmobilePlanning_SF1.getGeoCodes}',
+                                    address,
+                                    function(results, event) {
+                                        //console.log(results, event);
+                                        if (event.status) {
+                                            if (results.length == 2) {
+                                                j('#myLat').val(results[0]);
+                                                j('#myLong').val(results[1]);
+                                                mapController.clearMap();
+                                                mapController.addPOICollection([
+                                                    {lat: results[0], lng: results[1], rolloverContent: address, infoWindowContent: results[0] +', ' + results[1] }
+                                                ]);
+                                            } else {
+                                                alert(results);
+                                            }
+                                            app.doSearch(address);
+                                        } else if (event.type === 'exception') {
+                                            j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                        } else {
+                                            j('#responseErrors').html(event.message);
+                                        }
+                                    },
+                                    {escape: true}
+                                );
+                            } catch (e) {
+                                j('#fade').fadeOut(100);
+                            }
+                        }
+                    },
+                    clearStopInfo: function() {
+                        j('#durationHourAdd').val('');
+                        j('#durationMinuteAdd').val('');
+                        j('#startHourAdd').val('');
+                        j('#startMinuteAdd').val('');
+                        j('#commentsAdd').val('');
+                    },
+                    ViewDetailFromMap: function(id) 
+                    {                   
+                    
+                        app.clearStopInfo();
+                       // j(".acc-list-bod >a[id='" + id + "'] >img").trigger("click");
+                       
+                        if( (typeof sforce != 'undefined') && (sforce != null) ) 
+                        {   // Salesforce1                              
+                           //var recordId = id;
+                           var type = 'detail';
+                           sforce.one.navigateToSObject(id, type);                                                 
+                         } 
+                         else {
+                            // Desktop                            
+                           // $("a").attr("target","_blank");
+                           window.open('/'+id);
+                            }   
+                    },  
+                    addWithDetailFromMap: function(objType, id, user, name) {
+                    //debugger;
+                      console.log('addWithDetailFromMap');
+                        app.clearStopInfo();
+                        j(".acc-list-bod >a[id='" + id + "'] >img").trigger("click");
+                    },
+                    addWithDetail: function(objType, id, user, name) {
+                    //debugger;
+                    console.log('addWithDetail');
+                    j("#comments").removeClass("commentsError");
+                     j("#commentsAdd").removeClass("commentsError");
+                        objectType = objType;
+                        recordID = id;
+                        userRecord = user;
+                        
+                        app.clearStopInfo();
+                        j('#nameAdd').val(name);
+                        
+                        j( "#isCalendarEventAdd" ).prop('checked', false).removeClass( "ui-state-error" ).removeAttr("style");
+                        var addFields = j( [] ).add( j( "#nameAdd" ) ).add( j( "#commentsAdd" ) ).add(j( "#durationHourAdd" )).add(j( "#durationMinuteAdd" )).add(j( "#startHourAdd" )).add(j( "#startMinuteAdd" ));
+                        addFields.removeClass( "ui-state-error" );
+                        j(".validateTips").text("").css("display", "none").removeClass( "ui-state-highlight");
+                        
+                        //j('#dialog-form-add').dialog('open');
+                    },
+                    addItineraryAndStop: function(objectType, recordID, userRecord, durationHour, durationMinute, comments, startHour, startMinute, isCalendarEvent) {
+                        durationHour = durationHour || 0;
+                        durationMinute = durationMinute || 0;
+                        var duration = parseInt(durationHour) + parseInt(durationMinute);
+                        var itineraryDate = j('#datepicker').val();
+                        var userId;
+                        if(JSON.parse('{!isManager}')) userId = j('select[data-id="itineraryOwner"]').val();
+                        else userId = '{!$User.Id}';
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.addItineraryAndStop}',
+                            objectType, recordID, itineraryDate, userId, duration, comments,
+                            startHour, startMinute, isCalendarEvent,
+                            function(results, event){
+                                if (event.status) {
+                                    setTimeout(function() {
+                                        rerenderitinerary();
+                                    }, 1000);
+                                    if(app.showOnMap) app.getItinerary();
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    addToItinerary: function(objType, theId, theUser) {
+                    console.log('addToItinerary');
+                        var itineraryDate = j('#datepicker').val();
+                        console.log('addToItinerary');
+                        var lookupValueId = j('input[data-id="myLookupField"]').attr('id');
+                        var userId;
+                        if(JSON.parse('{!isManager}')) userId = j('select[data-id="itineraryOwner"]').val();
+                        else userId = '{!$User.Id}';
+                    console.log('Map Quest API'+ '{!mapKey}');
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.addToItinerary}',
+                            objType, theId, itineraryDate, userId,
+                            function(results, event){
+                            console.log('addToItinerary Remote Action--'+ event.status);
+                                if (event.status) {
+                                    rerenderitinerary();
+                                    if(app.showOnMap) app.getItinerary();
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    doSearch: function(address, zoomToLat, zoomToLong) {
+                        var j = jQuery.noConflict();
+                        // Forget show on map
+                        app.showOnMap = false;
+                        
+                        // clear list view
+                        j('#listView').html('');
+
+                        var params = {
+                            latitude: j('#myLat').val(),
+                            longitude: j('#myLong').val(),
+                            radius: j('select[name="resultRadius"] :selected').val(),
+                            limit: j('select[name="resultLimit"] :selected').val(),
+                            radiusUnit: j('select[name="radiusUnit"] :selected').val(),
+
+                            sobject: j('select[name="sobject"] :selected').val(),
+                            recordOwner: j('select[name="recordOwner"] :selected').val(),
+                            itineraryOwner: j('select[data-id="itineraryOwner"]').val(),
+                            userId: ''
+                        }
+
+                        if(JSON.parse('{!isManager}')) params.userId = j('select[data-id="itineraryOwner"]').val();
+                        else params.userId = '{!$User.Id}';
+
+                        // Get search params
+                        j('.' + params.sobject + ' .search-param').each(function() {
+                            if(j(this).attr('type') == 'checkbox') {
+                                params[j(this).attr('name')] = j(this).is(':checked');
+                            } else {
+                                params[j(this).attr('name')] = j(this).val();
+                            }
+                        });
+
+                        //document.getElementById('tab2').style.display = 'block';
+                        //j('#remoteAcctId').html('');
+                        j('#responseErrors').html('');
+                        
+                        j('#txtFilter').val('');
+                        
+                        mapController.clearMap();
+                        if (app.zoomOnLoc == true) {
+                            // show the map view
+                            j(".tab-1 a[href='#mapContainer']").trigger("click");
+                        }
+                        
+                        //seacrhActionFunction(params);
+                        
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.search}',
+                            params,
+                            function(results, event) {
+                                //console.log(results);
+                                //mapController.clearMap();
+                                var poiCollection = [{lat: params.latitude, lng: params.longitude, rolloverContent: address, infoWindowContent: 'Lat: ' + params.latitude + ' Lon: ' + params.longitude }];
+                                var dataSet = [];
+                                if(event.status) {
+                                    var rowType;
+                                    var mapIcon;
+                                    //var aaDataSet = [];
+                                   // var aaDataRow = [];
+                                    //var aoColumns = [];
+
+                                    // Get DOM IDs for HTML and Visualforce elements like this
+
+                                    if (results.length > 0) {
+                                        rowType = results[0].rowType;
+                                    }
+                                    else {
+                                        dataSet.push('<li><div class="acc-list-bod"><span/><p style="color: red;">No data available</p></div></li>');
+                                    }
+
+                                    //aoColumns = [{ "sTitle": "" },{ "sTitle": rowType },{ "sTitle": "Address" },{ "sTitle": "City" }];
+
+                                    for (var i=0, j=results.length; i<j; i++) {                                                                                
+                                        
+                                        var rowName = results[i].rowName.replace(/'/g,"\\'");                                        
+                                        //rowName = rowName.replace("\"", "\\\"");
+                                        var displayLetter = app.getDisplayLetter(i);
+                                        addWithDetailsIcon = '<img style="cursor:pointer;" onclick="app.addWithDetail(\''+results[i].rowType+'\', \''+results[i].rowId+'\', \'{!itinerary.OwnerId}\', \''+rowName+'\');" src="/img/func_icons/util/datePicker16.gif" title="Add With Details" width="12px" height="12px"/>&nbsp;&nbsp;'
+
+                                        if (rowType=='Contact')
+                                        {
+                                            //poiIcon='<a href="/'+results[i].rowId+'" target="_blank" style="text-decoration:none;" title="View Detail" >'
+                                            poiIcon='<a href = "#" onclick="app.ViewDetailFromMap(\''+results[i].rowId+'\');" style="text-decoration:none;" title="View Detail">'
+                                                    +'<div class="rzpoi_contact">'+displayLetter+'</div></a>'
+                                            mapIcon = 'rzpoi_contact';
+                                        } else if (rowType=='Lead') {
+                                            //poiIcon='<a href="/'+results[i].rowId+'" target="_blank" style="text-decoration:none;" title="View Detail" >'
+                                            poiIcon='<a href = "#" onclick="app.ViewDetailFromMap(\''+results[i].rowId+'\');" style="text-decoration:none;" title="View Detail">'
+                                                    +'<div class="rzpoi_lead">'+displayLetter+'</div></a>'
+                                            mapIcon = 'rzpoi_lead';
+                                        } else if (rowType=='Opportunity') {
+                                            //poiIcon='<a href="/'+results[i].rowId+'" target="_blank" style="text-decoration:none;" title="View Detail" >'
+                                            poiIcon='<a href = "#" onclick="app.ViewDetailFromMap(\''+results[i].rowId+'\');" style="text-decoration:none;" title="View Detail">'
+                                                    +'<div class="rzpoi_opp">'+displayLetter+'</div></a>'
+                                            mapIcon = 'rzpoi_opp';
+                                        } else {
+                                           // poiIcon='<a href="/'+results[i].rowId+'" target="_blank" style="text-decoration:none;" title="View Detail" >'
+                                            poiIcon='<a href = "#" onclick="app.ViewDetailFromMap(\''+results[i].rowId+'\');" style="text-decoration:none;" title="View Detail">'
+                                                    +'<div class="rzpoi_account" style="display:inline-block;">'+displayLetter+'</div></a>'
+                                            mapIcon = 'rzpoi_account';
+                                        }
+
+                                        poiCollection.push({key: results[i].rowId, lat: results[i].Latitude, lng: results[i].Longitude, index: i, type: rowType, rolloverContent: '<div style="width:180px;"><strong>'+results[i].rowName+'</strong><br/>' + results[i].Street +'<br/>' + results[i].City+' '+results[i].State+'<br/><strong>'+results[i].AccountCompany+'</strong></div>',
+                                        infoWindowContent:
+                                         '<div style="width:180px;"><strong>'+results[i].rowName+'</strong><br/>'
+                                        +'<table><tr>'
+                                        +'<td><a href="#" onclick="app.addToItinerary(\''+results[i].rowType+'\', \''+results[i].rowId+'\', \'{!itinerary.OwnerId}\');">Add to Itinerary</a></td>'
+                                        +'<td>&nbsp;&nbsp;&nbsp;</td>'
+                                        +'<td>&nbsp;&nbsp;&nbsp;</td>'
+                                        +'<td><a data-toggle="modal" data-target="#myAddModal" href="#" onclick="app.addWithDetailFromMap(\''+results[i].rowType+'\', \''+results[i].rowId+'\', \'{!itinerary.OwnerId}\', \''+rowName+'\');">Add With Details</a></td>'
+                                        +'<td>&nbsp;&nbsp;&nbsp;</td>'
+                                        +'<td><a href = "#"  onclick="app.ViewDetailFromMap(\''+results[i].rowId+'\');">View Detail</a></td>'
+                                        //+'<td><a href="/'+results[i].rowId+'" target="_blank" >View Detail</a></td>'
+                                        +'</tr></table>'
+                                        +'</div>'
+                                        });
+                                        
+                                        //aaDataSet.push(aaDataRow);
+                                        dataSet.push(app.getListViewRow(results[i], mapIcon, displayLetter));
+                                    }
+                                    if (app.zoomOnLoc == true) {
+                                        app.zoomOnLoc = false;
+                                        mapController.addPOICollection(poiCollection, app.zoomLocId, app.zoomToLat, app.zoomToLong);
+                                        app.zoomLocId = undefined;
+                                    }
+                                    else {
+                                        mapController.addPOICollection(poiCollection);
+                                    }
+                                    app.setSearchResult(dataSet);
+                                    
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                    j('#fade').fadeOut(100);
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                    j('#fade').fadeOut(100);
+                                }
+                            },
+                            {escape: false}
+                        );
+                        //seacrhActionFunction(params);
+                    },
+                    deleteRow: function(rowId, itineraryId) {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.removeStop}',
+                            rowId,
+                            function(results, event) {
+                                if (event.status) {
+                                    app.reorder(itineraryId);
+                                    j("#stop-detail").html('');
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    updateStop: function(stopId, durationHour, durationMinute, comments, startHour, startMinute, isCalendarEvent) {
+                        durationHour = durationHour || 0;
+                        durationMinute = durationMinute || 0;
+                        var duration = parseInt(durationHour) + parseInt(durationMinute);
+                        var itineraryDate = j('#datepicker').val();
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.updateStop}',
+                            stopId, duration, comments, itineraryDate, startHour, startMinute, isCalendarEvent,
+                            function(results, event){
+                                if (event.status) {
+                                    rerenderitinerary();
+                                    if(app.showOnMap) app.getItinerary();
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    moveStop: function(stopId, itineraryId, currentStop, direction) {
+                    
+                        //console.log('start move...');
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.moveStop}',
+                            stopId, itineraryId, currentStop, direction,
+                            function(results, event) {
+                                //console.log(results, event);
+                                if (event.status) {
+                                    rerenderitinerary();
+                                    if(app.showOnMap) app.getItinerary();
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    reorder: function(itineraryId) {
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.reorderItinerary}',
+                            itineraryId,
+                            function(results, event) {
+                                if (event.status) {
+                                    rerenderitinerary();
+                                    if(app.showOnMap) app.getItinerary();
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    getItinerary: function(clearMap) {
+                        if(app.showOnMap == false) return false;
+                        console.log('getItinerary');
+                        var myLat = j('#myLat').val();
+                        var myLong = j('#myLong').val();
+                        var itineraryDate = j('#datepicker').val();
+                        var userId;
+                        if(JSON.parse('{!isManager}')) userId = j('select[data-id="itineraryOwner"]').val();
+                        else userId = '{!$User.Id}';
+                        
+                        if (clearMap) mapController.clearMap();
+                        // show the map view
+                        j(".tab-1 a[href='#mapContainer']").trigger("click");
+
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.getItinerary}',
+                            myLat, myLong, itineraryDate, userId,
+                            function(results, event){
+                                //if (clearMap) mapController.clearMap();
+                                app.poiCollection = [];
+                                console.log('getItinerary---'+event.status);
+                                if (event.status) {
+                                    // Get DOM IDs for HTML and Visualforce elements like this
+                                    //j('#remoteAcctId').html();
+                                    //j('#responseErrors').html('');
+                                    for (var i=0, j=results.length; i<j; i++) {
+                                        app.poiCollection.push({key: results[i].rowId, lat: results[i].Latitude, lng: results[i].Longitude, text: i+1, type: results[i].rowType,
+                                                            rolloverContent: '<div style="width:180px;"><strong>'+results[i].rowName+'</strong></div>',
+                                                            infoWindowContent: '<div style="width:180px;"><strong>'+results[i].Street+'</strong></div>' });
+                                        
+                                        //app.getListViewRow(results[i]);
+                                    }
+                                    if (app.zoomOnLoc == true) {
+                                        app.zoomOnLoc = false;
+                                        mapController.addPOICollection(app.poiCollection, app.zoomLocId, app.zoomToLat, app.zoomToLong);
+                                        app.zoomLocId = undefined;
+                                    }
+                                    else {
+                                        mapController.addPOICollection(app.poiCollection);
+
+                                    }
+                                    
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    
+                    mqRoutePlanner: function() {
+                    //debugger;
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.calculateStops}',
+                            j("#datepicker").val(),
+                            function(result, event){
+                                if (event.status) {
+                                    if(result.stopCount > 25) 
+                                    {
+                                        var answer = confirm("Only 25 addresses may be routed at a time. Would you like to route the first 25?");                                        
+                                        if(answer)
+                                        {
+                                            var googleUrl = 'https://maps.google.com/maps?saddr=' + result.startAddress + '&daddr=' + result.addresses;
+                                            if( (typeof sforce != 'undefined') && (sforce != null) ) 
+                                            {  
+                                               sforce.one.navigateToURL(googleUrl, true);                                                 
+                                             } 
+                                             else 
+                                             {                                              
+                                               window.open(googleUrl);
+                                             }   
+                                            
+                                        }
+                                    } 
+                                    else 
+                                    {                                                                            
+                                        if( (typeof sforce != 'undefined') && (sforce != null) ) 
+                                        {                                  
+                                            var startAddress = '' ;                                    
+                                            var destAddress = '';
+                                            if((j("input[name=saddr]").length)>0)
+                                            {
+                                                startAddress = (j("input[name=saddr]").val()).split(' ').join('+');
+                                            }
+                                            if((j("input[name=daddr]").length)>0)
+                                            {
+                                               var destAddrArray = (j("input[name=daddr]").val()).split('to:');
+                                               var destAddr = '/';
+                                                   for (var i = 0; i < destAddrArray.length; i++) {
+                                                     destAddr += destAddrArray[i] + '/';
+                                                   }
+                                               var destAddress = (destAddr).split(' ').join('+');
+                                           }
+                                           var mapAddr = 'https://maps.google.com/maps/dir/' + startAddress + destAddress ;                          
+                                           sforce.one.navigateToURL(mapAddr, false);                                                                                            
+                                        } 
+                                        else 
+                                        {                           
+                                            j('#gmroute').submit();
+                                        }                                                                                                             
+                                    }
+                                } else if (event.type === 'exception') {
+                                    j('#responseErrors').html(event.message + "<br/>\n<pre>" + event.where + "</pre>");
+                                } else {
+                                    j('#responseErrors').html(event.message);
+                                }
+                            },
+                            {escape: true}
+                        );
+                    },
+                    getDisplayLetter: function(index) {
+                        var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                        var position = index % 25;
+                        return letters[position];
+                    },
+                    addFilter: function() {
+                        j('.finder').on('click', '.add-filter', function(e) {
+                            e.preventDefault();
+                            var jt = j(this);
+
+                            // Get object
+                            var object = jt.data('field-object');
+
+                            // Get selected value
+                            var fieldId = jt.prev('.selected-filter').val();
+
+                            // Callout VFR
+                            Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.addPreferredField}',
+                                fieldId,
+                                object,
+                                function(result, evt) {
+                                    //console.log(result, evt);
+                                    app.refreshFilters(object);
+                                }
+                            );
+
+                        });
+                    },
+                    removeFilter: function() {
+
+                        j('.finder').on('click', '.remove-filter', function(i) {
+                            // Get field id and object to remove
+                            var jt = j(this);
+                            var fieldId = jt.data('field-id');
+                            var object = jt.data('field-object');
+
+                            // Callout VFR
+                            Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.RZM_rmobilePlanning_SF1.removePreferredField}',
+                                fieldId,
+                                object,
+                                function(result, evt) {
+                                    //console.log(result, evt);
+                                    app.refreshFilters();
+                                }
+                            );
+                        });
+                    },
+                    refreshFilters: function(obj) {
+                   // debugger;
+                        // Get filter vals
+                        var params = {
+                           // radius: j('select[name="resultRadius"] :selected').val(),
+                           // limit: j('select[name="resultLimit"] :selected').val(),
+                            radius: j('select[name="resultRadius"]').val(),            
+                            limit: j('select[name="resultLimit"]').val(),
+                            radiusUnit: j('select[name="radiusUnit"] :selected').val(),
+                            sobject: j('select[name="sobject"] :selected').val(),
+                            recordOwner: j('select[name="recordOwner"] :selected').val(),
+                            q: j('#mySearch').val()
+                        }
+
+                        j('.search-param').each(function() {
+                            if(j(this).attr('type') == 'checkbox') {
+                                params[j(this).attr('name')] = j(this).is(':checked');
+                            } else {
+                                params[j(this).attr('name')] = j(this).val();
+                            }
+                        });
+
+                        // Build url
+                        //var url = app.getBaseURL();
+                        var url = '/apex/rzm__RZM_RmobilePlanning_SF1';
+
+                        // check query string
+                        if(url.indexOf('?') == -1) url += '?';
+
+                       // concat filter values
+                        for (var key in params) {
+                           if(params[key] != "")
+                           {
+                                url += key + '=' + params[key];
+                                url += '&';
+                            }
+                        }
+                        url = url.substring(0,url.length-1);
+                        //callfind(url);
+                        
+                        if( (typeof sforce != 'undefined') && (sforce != null) ) {
+                          // Salesforce1 navigation                                                    
+                          sforce.one.navigateToURL(url,true);
+                        } else {
+                          // Set the windows URL                          
+                         window.location.href = url;                         
+                        }
+                    },
+                    getBaseURL: function() {
+                        var url = document.URL;
+
+                        // If no params, return base
+                        if(url.indexOf('?') == -1 || url.indexOf('&') == -1) return url;
+
+                        if(url.indexOf('?sfdc.tabName') != -1) {
+                            // Get base
+                            var result = url.substr(0, url.indexOf('?'));
+
+                            // Contains params, preserve tab
+                            result += '?sfdc.tabName=' + app.getURLParam('sfdc.tabName');
+
+                            return result;
+                        } else {
+                            return url.substr(0, url.indexOf('?'));
+                        }
+
+                        return url;
+                    },
+                    zoomOnLocation: function(isStop, id, lat, long) {
+                        try {
+                            app.zoomLocId = id;
+                            app.zoomOnLoc = true;
+                            
+                            if (!isStop && app.showOnMap) {
+                                app.zoomToLat = lat;
+                                app.zoomToLong = long;
+                                
+                                app.doSearch(j('#mySearch').val());
+                            }
+                            else if (isStop && !app.showOnMap) {
+                                app.zoomToLat = lat;
+                                app.zoomToLong = long;
+                                
+                                app.showOnMap = true;
+                                app.getItinerary(true);
+                            }
+                            else {
+                                // show the map view
+                                j(".tab-1 a[href='#mapContainer']").trigger("click");
+                                
+                                app.zoomOnLoc = false;
+                                app.zoomLocId = undefined;
+                                mapController.zoomOnLocation(id, lat, long);
+                            }
+                        }
+                        catch (e) {
+                        }
+                    },
+                    getListViewRow: function(details, mapIcon, displayLetter) {
+                         //debugger;
+                        // Function to zoom-in on the selected POI
+                        var zoomFunc = 'app.zoomOnLocation(false, \'' + details.rowId + '\',' + details.Latitude + ',' + details.Longitude + ')';
+                        var dtlsRowName = details.rowName.replace(/'/g, "\\'");
+                        //dtlsRowName = dtlsRowName.replace("\"", "\\\"");                        
+                        var rowContent = '<li>';
+                        rowContent += '<div class="acc-list-bod">';
+                        rowContent += ' <span><div class="' + mapIcon + '" onclick="' + zoomFunc + '">' + displayLetter + '</div></span>';
+                        //rowContent += ' <p style="padding-top:0;"> <a class="list-view-text" href="/'+ details.rowId +'" target="_blank" title="View Detail">' + details.rowName + '</a></p>';
+                        rowContent += ' <p style="padding-top:0;"> <a class="list-view-text" href = "#" onclick="app.ViewDetailFromMap(\''+details.rowId+'\');" title="View Detail">' + details.rowName+ '</a></p>';                       
+                        rowContent += ' <a onclick="app.expandListViewRow(j(this));" href="#?" class="menuitem submenuheader" headerindex="10h">';
+                        rowContent += '     <span class="accordprefix"></span>';
+                        rowContent += '     <span class="accordsuffix"> <img src="/resource/rzm__PreludeAssets_Itinerary/images/expand.png" class="statusicon"> </span>';
+                        rowContent += ' </a>';
+                        rowContent += ' <a id="' + details.rowId + '" data-toggle="modal" data-target="#myAddModal" href="#"> <img onclick="app.addWithDetail(\''+details.rowType+'\', \''+details.rowId+'\', \'{!itinerary.OwnerId}\', \''+dtlsRowName+'\');" src="/resource/rzm__PreludeAssets_Itinerary/images/cal-icon.png" title="Add With Details"> </a>';
+                        rowContent += ' <a href="#"> <img onclick="app.addToItinerary(\''+details.rowType+'\', \''+details.rowId+'\', \'{!itinerary.OwnerId}\');" src="/resource/rzm__PreludeAssets_Itinerary/images/add-icon.png" title="Add to Itinerary"> </a>';
+                        rowContent += '</div>';
+                        rowContent += '<div class="submenu" contentindex="10c" style="display: none;">';
+                        rowContent += ' <ul>';
+                        
+                        var acctountLI  = '     <li><span class="li-head">Account: </span>'     + details.AccountCompany+ '</li>';
+                        var companyLI   = '     <li><span class="li-head">Company: </span>'     + details.AccountCompany+ '</li>';
+                        var addressLI   = '     <li><span class="li-head">Address: </span>'     + details.Street        + '</li>';
+                        var cityLI      = '     <li><span class="li-head">City: </span>'        + details.City          + '</li>';
+                        var sourceLI    = '     <li><span class="li-head">Source: </span>'      + details.LeadSource    + '</li>';
+                        var ownerLI     = '     <li><span class="li-head">Owner: </span>'       + details.rowOwner      + '</li>';
+                        var statusLI    = '     <li><span class="li-head">Status: </span>'      + details.Status        + '</li>';
+                        var industryLI  = '     <li><span class="li-head">Industry: </span>'    + details.Industry      + '</li>';
+                        var typeLI      = '     <li><span class="li-head">Type: </span>'        + details.Type          + '</li>';
+                        var ratingLI    = '     <li><span class="li-head">Rating: </span>'      + details.Rating        + '</li>';
+                        var amountLI    = '     <li><span class="li-head">Amount: </span>'      + details.Amount        + '</li>';
+                        var stageLI     = '     <li><span class="li-head">Stage: </span>'       + details.Stage         + '</li>';
+                        var closeDateLI = '     <li><span class="li-head">Close Date: </span>'  + details.CloseDate     + '</li>';
+                        
+                        switch (details.rowType) {
+                            case 'Account':
+                                rowContent += addressLI + cityLI + typeLI + industryLI + ownerLI;
+                                break;
+                            case 'Contact':
+                                rowContent += acctountLI + addressLI + cityLI + sourceLI + ownerLI;
+                                break;
+                            case 'Lead':
+                                rowContent += companyLI + addressLI + cityLI + statusLI + sourceLI + industryLI + ratingLI + ownerLI;
+                                break;
+                            case 'Opportunity':
+                                rowContent += acctountLI + addressLI + cityLI + amountLI + stageLI + closeDateLI + sourceLI + ownerLI;
+                                break;
+                        }
+                        rowContent += ' </ul>';
+                        rowContent += '</div>';
+                        return rowContent;
+                    },
+                    setSearchResult: function(rows) {
+                        //console.log(rows, columns);
+                        try {
+                            j('#listView').append(rows.join(''));
+                            
+                            // sort the list
+                            var items = j('#listView').children();
+                            items.sort(function(a,b) {
+                              var keyA = j(a).find('.acc-list-bod >p').text();
+                              var keyB = j(b).find('.acc-list-bod >p').text();
+
+                              if (keyA < keyB) return -1;
+                              if (keyA > keyB) return 1;
+                              return 0;
+                            });
+                            var ul = j('#listView');
+                            j.each(items, function(i, li){
+                              ul.append(li);
+                            });
+                        } catch(e) {
+                            console.log(e);
+                        }
+                        j('#fade').fadeOut(100);
+                    },
+                    setModalWindowText: function(action, stpName) {
+                        try {
+                            if (action.toUpperCase() == "CREATE") {
+                                j("#myAddModalLabel").text('Add Stop Information');
+                                j("#btnCreate").text("Create");
+                                j("#addName").text(stpName);
+                            }
+                            else {
+                                j("#myAddModalLabel").text('Edit Stop Information');
+                                j("#btnCreate").text("Save");
+                                j("#addName").text(stpName);
+                            }
+                        } catch(e) {
+                            console.log(e);
+                        }
+                    },
+                    expandListViewRow: function(ctrl) {
+                        try {
+                            var imageSrc = j(ctrl).find(".statusicon").attr("src");
+                            var isExpand = j(ctrl).parent().next().css("display") == "none";    // which action will be performed now - expand or collapse?
+                            if (isExpand == true) {
+                                j("#listView .submenu").filter(":visible").slideToggle();
+                                j("#listView .submenu").filter(":visible").prev().find(".statusicon").attr("src", imageSrc);
+                            }
+                            j(ctrl).parent().next().slideToggle();
+                            var imageSrc = j(ctrl).find(".statusicon").attr("src");
+                            j(ctrl).find(".statusicon").attr("src", isExpand == true ? imageSrc.replace("expand", "collapse") : imageSrc.replace("collapse", "expand"));
+                        } catch(e) {
+                            console.log(e);
+                        }
+                    },
+                    expandItineraryRow: function(ctrl) {
+                        try {
+                            var imageSrc = j(ctrl).find(".statusicon").attr("src");
+                            var isExpand = j(ctrl).parent().next().css("display") == "none";    // which action will be performed now - expand or collapse?
+                            if (isExpand == true) {
+                                j(".col-md-12 >.accordion-list").find("span.submenu").filter(":visible").slideToggle();
+                                j(".col-md-12 >.accordion-list").find("span.submenu").filter(":visible").prev("span").find("a.menuitem.submenuheader").find(".statusicon").attr("src", imageSrc);
+                            }
+                            j(ctrl).parent().next().slideToggle();
+                            var imageSrc = j(ctrl).find(".statusicon").attr("src");
+                            j(ctrl).find(".statusicon").attr("src", isExpand == true ? imageSrc.replace("expand", "collapse") : imageSrc.replace("collapse", "expand"));
+                        } catch(e) {
+                            console.log(e);
+                        }
+                    },
+                    resizeStopDiv: function() {
+                        var ctrlDiv = j('#grad1 >span>ul[class="accordion-list"]');
+                        var maptop = j('.sec-bg2').position().top;
+                        var accrd = j(ctrlDiv).position().top;
+                        var difrnc = maptop - accrd;
+                        var acchit = j(ctrlDiv).height()+ difrnc + 45;
+                        j(ctrlDiv).height(acchit);  
+                    },
+                }
+
+                j(document).ready(function() {
+                    //debugger;
+                    //j('.tab-1 a.active').addClass('active');
+                    j('.tab-1 a').click(function(){
+                        j("#mapContainer").hide();
+                        j("#tab2").hide();
+                        j('.tab-1 a').removeClass('active');
+                        j(this).addClass('active');
+                        var activetab = j(this).attr('href');
+                        j(activetab).fadeIn();
+                    });
+                  
+                  debugger;
+                   if (j("#divAssignedTo").text().trim() == null ||j("#divAssignedTo").text().trim()=='') {
+                       j(".accordinClass").addClass("right-ul-height-top");
+                    }
+                    else
+                    {
+                     j(".accordinClass").removeClass("right-ul-height-top");
+                    }                       
+                    
+                  //j('#grad1 >span>ul[class="accordion-list"]').css("height", j('.sec-bg1').height() + j('#mapContainer').height()+40);
+     
+                    
+                    j('#txtFilter').keyup(function() {
+                        var searchText = j(this).val().toLowerCase();
+                        
+                        j('#listView .list-view-text').each(function() {
+                            var currentLiText = j(this).parents().eq(2).clone().find("span").remove().end().text().toLowerCase(),
+                            showCurrentLi = currentLiText.indexOf(searchText) !== -1;
+                            j(this).parents().eq(2).toggle(showCurrentLi);
+                        });
+                    });
+                    
+
+                    app.initMap();
+                    app.initOther();
+                    app.initFilters();
+
+                    app.addFilter();
+                    app.removeFilter();
+
+                    app.initDatePicker();
+                    //j('#grad1 >span>ul[class="accordion-list"]').css("height",j('.sec-bg2').height());
+                    
+                    // set the width of dynamic filter input controls
+                    j("input[placeholder]").each(function () {
+                        var ilen = j(this).attr('placeholder').trim();
+                        j(this).attr('size', ilen.length - 2);
+                    });
+                    //app.resizeStopDiv();
+                });
+                
+                
+            </script>  
+            
+            <script type="text/javascript">            
+            function ApplyStopClass()
+            {
+            debugger;
+                
+                var AssignToDivVal = document.getElementById('divAssignedTo').innerHTML.trim();
+                var stopsULList = document.getElementsByClassName('accordinClass')[0].id;
+                var stopAccordId = document.getElementById(stopsULList);
+                if(AssignToDivVal ==null || AssignToDivVal == '')
+                {
+                    stopAccordId.classList.add('right-ul-height-top');
+                }  
+                else
+                {
+                    stopsULList.classList.remove('right-ul-height-top');
+                }               
+            }
+            
+            </script>         
+                 
+           <title>Itinerary Planner</title>
+        </head>
+        <body>
+            <input type="hidden" name="myLat" id="myLat" value=""/>
+            <input type="hidden" name="myLong" id="myLong" value=""/>
+          
+            <div id="fade">
+                <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/loading.gif')}"/><br />Loading
+            </div> 
+            <apex:actionFunction name="rerenderitinerary" reRender="route,directions" oncomplete="ApplyStopClass();app.getItinerary(true);return false; "/> 
+            <apex:actionFunction action="{!chooseDay}"  name="clickDay" reRender="route,stops,directions" oncomplete="ApplyStopClass();">
+                <apex:param name="firstParam" assignTo="{!selectedDay}" value="" />
+            </apex:actionFunction>   
+                   
+            <div class="finder container">
+                <div class="row">
+                    <div class="logo">
+                        <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/logo.png')}"/>
+                    </div>
+                </div>
+                <div class="row">
+                    <!-- Itinerary Section --> 
+                    <div class="col-md-4" id="itnrySection">
+                        <div id="grad1" class="sec-bg right-height">
+                        <h3>
+                            <span style="width:100%"> Itinerary </span>
+                        </h3>
+                        <div class="col-md-12">
+                            <div class="lbl_left" style="{!IF(NOT(isManager), 'display:none;', '')}">
+                                <p>Assigned to:</p>
+                            </div>
+                            <div id="divAssignedTo" class="contrl_rit">
+                                <apex:selectList value="{!itinerary.rzm__User__c}" id="itineraryOwner" html-data-id="itineraryOwner" size="1" rendered="{!isManager}">
+                                    <apex:selectOptions value="{!users}"/>
+                                    <apex:actionSupport event="onchange" reRender="route" oncomplete="ApplyStopClass();"/>
+                                </apex:selectList>                                  
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="lbl_left">        
+                                <p>Itinerary Date:</p>
+                            </div>
+                            <div class="contrl_rit">
+                                <div class="calndr"><input type="text" id="datepicker" size="10" value=""/><img src="/resource/rzm__PreludeAssets_Itinerary/images/Calendar.png" alt="" /></div><br/>
+                            </div>
+                                                           
+                            <div class="clearfix"></div>
+                            <div style="width:100%; margin-top:10px; padding:0 2px;">
+                                <div class="map-btn">
+                                    <apex:commandButton value="Show on Map"  styleClass="buttonclr" onclick="app.showOnMap = true; app.getItinerary(true);return false;"  action="{!getMaxedGoogleResults}"/>
+                                     <!--<input class="buttonclr" type="submit" value="Show on Map"/>-->
+                                    
+                                </div>
+                                <div class="map-btn">
+                                    <apex:commandButton value="Route Planner" styleClass="buttonblack" onclick="app.mqRoutePlanner();return false;" action="{!getGoogleMapRouteStops}" />
+                                     <!--<input class="buttonblack" type="submit" value="Route Planner"/>-->                                     
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <apex:outputPanel id="route" styleClass="col-md-12 col-xs-12 spacing">
+                           
+                            <apex:dataList id="stops" value="{!stops}" var="s"  styleClass="accordion-list right-ul-height accordinClass"> 
+                             
+                                <div class="acc-list-bod">
+                                    <apex:OutputPanel id="pnlOuter">
+                                        <apex:OutputPanel id="OuterPanel">
+                                        <!--<apex:panelGroup layout="inline" id="stopId" >-->
+                                            <apex:panelGroup layout="inline" rendered="{!s.position=='none'}">
+                                                <p>{!s.stop.Name}</p>
+                                            </apex:panelGroup>
+                                            <apex:panelGroup layout="inline" rendered="{!s.position<>'none'}">
+                                                <apex:outputPanel >
+                                                    <div class="{!if(s.stop.Location_Type__c=='Contact','rzpoi_contact',
+                                                                  if(s.stop.Location_Type__c=='Lead','rzpoi_lead',
+                                                                  if(s.stop.Location_Type__c=='Opportunity','rzpoi_opp','rzpoi_account')))}"
+                                                      onclick="app.zoomOnLocation(true,'{!s.stop.Id}',{!s.stop.Location__Latitude__s},{!s.stop.Location__Longitude__s})">
+                                                      {!s.stop.SortOrder__c}
+                                                    </div>
+                                                </apex:outputPanel>
+                                                <!--<p><apex:image url="{!URLFOR($Resource.ItineraryPage, 'ItineraryPageDesign/images/map-icon.png')}"/>-->
+                                                <p class="left_dname">
+                                                    <apex:outputPanel rendered="{!s.stop.rzm__Calendar_Event__c}" >
+                                                        <img style="  cursor:pointer; width:14px; height:14px; margin-top:-3px; margin-right:2px;" src="{!URLFOR($Resource.PreludeAssets_Itinerary,'/images/Calendar-32.png')}" width="20px" height="20px" title="This Stop is an Event in your calendar"/>
+                                                    </apex:outputPanel>
+                                                    {!s.stop.Name}
+                                                    <span class="time-text">
+                                                        <apex:outputPanel rendered="{!NOT(s.timeless)}"><br/>{!s.theTime}</apex:outputPanel>
+                                                    </span>
+                                                </p>
+                                                <a href="#" class="menuitem submenuheader" onclick="app.expandItineraryRow(j(this));">
+                                                    <span class="accordprefix"></span>
+                                                    <span class="accordsuffix">
+                                                        <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/expand.png')}" styleClass="statusicon" />
+                                                    </span>
+                                                </a>
+                                                
+                                                <apex:commandLink reRender="stops" oncomplete="ApplyStopClass();">
+                                                    <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/delete-icon.png')}" title="Click to Delete Stop"
+                                                    onclick="if (confirm('Are you sure you want to delete this stop?')) app.deleteRow('{!s.stop.Id}','{!s.stop.rzm__Itinerary__c}');return false;"/>
+                                                </apex:commandLink>
+
+                                                <a data-toggle="modal" data-target="#myModal" href="#" class="edit-stop" stopId="{!s.stop.Id}" startHour="{!if(s.timeless=true,'xxx',s.theHour)}" startMinute="{!if(s.timeless=true,'xxx',s.theMinutes)}"
+                                                stopName="{!s.stop.Name}" stopDurationHour="{!s.durationHour}" stopDurationMinute="{!s.durationMinute}" 
+                                                stopComments="{!s.stop.Comment__c}" stopIsCalendarEvent="{!s.stop.rzm__Calendar_Event__c}"
+                                                title="Click to Edit Stop">
+                                                    <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/edit-icon.png')}"/>
+                                                </a>
+                                                
+                                                <apex:commandLink reRender="stops" oncomplete="ApplyStopClass();">
+                                                    <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/up-arrow-1.png')}" title="Move Up" rendered="{!s.position<>'first' && s.position<>'both'}"
+                                                        onclick="app.moveStop('{!s.stop.Id}','{!s.stop.rzm__Itinerary__c}','{!s.stop.rzm__SortOrder__c}','up');" />
+                                                </apex:commandLink>
+                                                
+                                               <apex:commandLink reRender="stops" oncomplete="ApplyStopClass();">
+                                                    <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/down-arrow-1.png')}" title="Move Down" rendered="{!s.position<>'last' && s.position<>'both'}"
+                                                    onclick="app.moveStop('{!s.stop.Id}','{!s.stop.rzm__Itinerary__c}','{!s.stop.rzm__SortOrder__c}','down');" />                                     
+                                                </apex:commandLink>
+                                                
+                                            </apex:panelGroup>
+                                        </apex:OutputPanel>
+
+                                        <apex:OutputPanel id="InnerPanel" styleClass="submenu" style="display:none; border-bottom: none;">
+                                           
+                                                <p><span class="li-head">Address: </span><apex:OutputText value="{0}">
+                                                        <apex:param value="{!s.stop.rzm__Address__c}"/>
+                                                    </apex:outputText></p>                                              
+                                                <p style="display:{!IF(s.stop.rzm__ParentName__c=NULL,'None','Block')};"><span class="li-head">Account/Company: </span><apex:OutputText value="{0}">
+                                                        <apex:param value="{!s.stop.rzm__ParentName__c}"/>
+                                                    </apex:outputText></p>                                                                                                         
+                                                        
+                                                <p><span class="li-head">Expected Arrival: </span><apex:OutputText value="{0}">
+                                                    <apex:param value="{!s.theTime}"/>
+                                                    </apex:outputText></p>
+                                                <p><span class="li-head">Duration: </span><apex:OutputText value="{0}">
+                                                    <apex:param value="{!s.theDuration}"/>
+                                                    </apex:outputText></p>
+                                                <p><span class="li-head">Phone: </span><apex:OutputText value="{0}">
+                                                    <apex:param value="{!s.stop.rzm__Phone__c}"/>
+                                                    </apex:outputText></p>
+                                                <p><span class="li-head">Mobile: </span><apex:OutputText value="{0}">
+                                                    <apex:param value="{!s.stop.rzm__Mobile__c}"/>
+                                                    </apex:outputText></p>
+                                                <p><span class="li-head">Email: </span><apex:OutputText value="{0}">
+                                                    <apex:param value="{!s.stop.rzm__Email__c}"/>
+                                                    </apex:outputText></p>
+                                            <!-- </apex:panelGroup> -->
+                                        </apex:outputPanel>
+                                    </apex:OutputPanel>
+                                </div>
+                                
+                            </apex:dataList>
+                            
+                        </apex:OutputPanel>
+                        
+                        
+                        </div>
+                    </div>
+                    <!-- End of Itinerary Section -->
+                    <div class="col-md-8" id= "mapSection">
+                        <!-- Search Area -->
+                        <div class="row">
+                            <div class="">
+                                <div id="grad1" class="sec-bg1">
+                                    <div class="col-md-9 col-sm-9 col-xs-9">
+                                        <input style="width:100%" name="searchinput" type="text" value="" placeholder="Enter Address" id="mySearch" >
+                                        </input>
+                                    </div>
+                                    <div class="col-md-3 col-sm-3 col-xs-3">
+                                        <input name="searchAddress" style="background:#ef4e4e; color:#ffffff; border:none; padding:7px; font-size:13px; width:100%;" type="submit" value="Search">
+                                        </input>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                    <div class="row">
+                                        <div class="col-md-2 sel-wid">
+                                           <select id="myLimit" name="resultLimit">
+                                                <option value="100" disabled="yes" selected="true">Max Count - 100</option>
+                                                <option value="10">10</option>
+                                                <option value="20">20</option>
+                                                <option value="50">50</option>  
+                                                <option value="100">100</option>                                              
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 sel-wid">
+                                            <select id="myRadius" title="Choose radius of search area" name="resultRadius">
+                                                <option value="5" disabled="yes" selected="true">Radius - 5</option>                                                
+                                                <option value="5">5  mi/km</option>
+                                                <option value="10">10  mi/km</option>
+                                                <option value="20">20  mi/km</option>
+                                                <option value="50">50  mi/km</option>
+                                                <option value="75">75  mi/km</option>
+                                                <option value="100">100 mi/km</option>
+                                                <option value="500">500 mi/km</option>
+                                                <option value="1000">1000 mi/km</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 sel-wid">
+                                            <select id="radiusUnit" name="radiusUnit">
+                                                <option value="mi" disabled="yes" selected="true">Miles</option>                                                
+                                                <option value="mi">Miles</option>
+                                                <option value="km">Kilometres</option>                                          
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 sel-wid">
+                                            <select name="sobject" id="sobject">
+                                                <option value="account" disabled="yes" selected="true">Accounts</option>                                                
+                                                <option value="account">Accounts</option>
+                                                <option value="contact">Contacts</option>
+                                                <option value="lead">Leads</option>
+                                                <option value="opportunity">Opportunities</option>                                          
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 sel-wid">
+                                            <select  name="recordOwner" id="recordOwner">                                                
+                                                <option value="my" disabled="yes" selected="true">My Records</option>
+                                                <option value="all">All Records</option> 
+                                                <option value="my">My Records</option>                                          
+                                            </select>
+                                        </div>
+                                         <div class="filters">
+                                            <div class="filter-set account">                                                
+                                                <c:CustomFilterPrelude sObject="Account" id="accountFilters"/>
+                                            </div>
+                                            <div class="filter-set contact">
+                                                <c:CustomFilterPrelude sObject="Contact" id="contactFilters"/>
+                                            </div>
+                                            <div class="filter-set lead">
+                                                <c:CustomFilterPrelude sObject="Lead" id="leadFilters"/>
+                                            </div>
+                                            <div class="filter-set opportunity">
+                                                <c:CustomFilterPrelude sObject="Opportunity" id="oppFilters"/>
+                                            </div>
+                                        </div>
+                                        <div><!--class="col-md-2 sel-wid1"-->
+                                           
+                                        </div>
+                                       
+                                    </div>
+                                    <p>
+                                        <div id="responseErrors" style="display: none;"></div>
+                                    </p>
+
+
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of Search Area -->
+                        
+                         <apex:actionFunction name="callfind" action="{!refreshPage}" reRender="txtUrl" >
+                            <apex:param name="firstParam" id="rfrshPgeId" value="" />
+                        </apex:actionFunction>
+
+                        <!-- List and Map View -->
+                        <div class="row">
+                            <div class="">
+                                <div class="sec-bg2" style="border-radius:10px;">
+                                    <div class="col-md-12 tab-1">
+                                        <div class="mlview spacingr spacing " > 
+                                            <a href="#mapContainer" class="active"> <!--onclick="app.showOnMap = true; app.getItinerary(false);return false;"-->
+                                                <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/mv.png')}"/>
+                                                
+                                                <span>Map view</span>
+                                            </a> 
+                                        </div>
+
+                                        <div class="mlview spacing">
+                                            <a href="#tab2">
+                                                <apex:image url="{!URLFOR($Resource.rzm__PreludeAssets_Itinerary, 'images/lv.png')}"/>
+                                                <span>List view</span>  
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div id="mapContainer" class="col-md-12 col-xs-12 mlview2 spacing text_bg tab-bgwidth" style="width: 100%;display: block; overflow: hidden;">
+                                        <div id="map" style="display: block; height:378px; overflow: hidden; border:1px #b6b6b6 solid;"></div>
+                                        
+                                    </div>
+                                    <div class="col-md-12 col-xs-12 mlview1 spacing text_bg tab-bgwidth"  id="tab2" style="width: 100%;display: none;"> 
+                                        <div class="search-width">
+                                            <input id="txtFilter" name="txtFilter" type="text" placeholder="Enter Search Criteria"/>
+                                        </div>
+                                      
+                                        <ul id="listView" class="accordion-list" style="height:310px; border:none;">
+                                        </ul>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of List and Map View -->
+                    </div>
+                </div>
+                <!--Modal-->
+                <div class="modal fade" id="myAddModal" tabindex="-1" role="dialog" aria-labelledby="myAddModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" name="modalDialog">
+                        <div class="modal-bg">
+                            <button  id="closeBttn" type="button" class="modalclose" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            <h3 class="modal-title" id="myAddModalLabel">Add Stop Information</h3>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <p class="validateTips"></p>
+                                        <span class="modaltxt1" id="addName">
+                                            <input type="text" name="nameAdd" id="nameAdd" />
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <span class="modaltxt">Estimated Arrival :</span>
+                                        <select id="startHourAdd" name="startHourAdd" class="modalopt">
+                                            <option value="xxx" selected="yes">Timeless</option>
+                                            <option value="480">8 AM</option>
+                                            <option value="540">9 AM</option>
+                                            <option value="600">10 AM</option>
+                                            <option value="660">11 AM</option>
+                                            <option value="720">12 PM</option>
+                                            <option value="780">1 PM</option>
+                                            <option value="840">2 PM</option>
+                                            <option value="900">3 PM</option>
+                                            <option value="960">4 PM</option>
+                                            <option value="1020">5 PM</option>
+                                            <option value="1080">6 PM</option>
+                                            <option value="1140">7 PM</option>
+                                            <option value="1200">8 PM</option>
+                                            <option value="1260">9 PM</option>
+                                            <option value="1320">10 PM</option>
+                                            <option value="1380">11 PM</option>
+                                            <option value="0">12 AM</option>
+                                            <option value="60">1 AM</option>
+                                            <option value="120">2 AM</option>
+                                            <option value="180">3 AM</option>
+                                            <option value="240">4 AM</option>
+                                            <option value="300">5 AM</option>
+                                            <option value="360">6 AM</option>
+                                            <option value="420">7 AM</option>
+                                        </select>
+                                        <span>:</span>
+                                        <select id="startMinuteAdd" name="startMinuteAdd" class="modalopt">
+                                            <option value="xxx" selected="yes"></option>
+                                            <option value="0">00</option>
+                                            <option value="30">30</option>
+                                            <option value="" disabled="yes">-----</option>
+                                            <option value="1">01</option>
+                                            <option value="2">02</option>
+                                            <option value="3">03</option>
+                                            <option value="4">04</option>
+                                            <option value="5">05</option>
+                                            <option value="6">06</option>
+                                            <option value="7">07</option>
+                                            <option value="8">08</option>
+                                            <option value="9">09</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                            <option value="13">13</option>
+                                            <option value="14">14</option>
+                                            <option value="15">15</option>
+                                            <option value="16">16</option>
+                                            <option value="17">17</option>
+                                            <option value="18">18</option>
+                                            <option value="19">19</option>
+                                            <option value="20">20</option>
+                                            <option value="21">21</option>
+                                            <option value="22">22</option>
+                                            <option value="23">23</option>
+                                            <option value="24">24</option>
+                                            <option value="25">25</option>
+                                            <option value="26">26</option>
+                                            <option value="27">27</option>
+                                            <option value="28">28</option>
+                                            <option value="29">29</option>
+                                            <option value="31">31</option>
+                                            <option value="32">32</option>
+                                            <option value="33">33</option>
+                                            <option value="34">34</option>
+                                            <option value="35">35</option>
+                                            <option value="36">36</option>
+                                            <option value="37">37</option>
+                                            <option value="38">38</option>
+                                            <option value="39">39</option>
+                                            <option value="40">40</option>
+                                            <option value="41">41</option>
+                                            <option value="42">42</option>
+                                            <option value="43">43</option>
+                                            <option value="44">44</option>
+                                            <option value="45">45</option>
+                                            <option value="46">46</option>
+                                            <option value="47">47</option>
+                                            <option value="48">48</option>
+                                            <option value="49">49</option>
+                                            <option value="50">50</option>
+                                            <option value="51">51</option>
+                                            <option value="52">52</option>
+                                            <option value="53">53</option>
+                                            <option value="54">54</option>
+                                            <option value="55">55</option>
+                                            <option value="56">56</option>
+                                            <option value="57">57</option>
+                                            <option value="58">58</option>
+                                            <option value="59">59</option>
+                                        </select>                                       
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12"><span class="modaltxt">Duration :</span>
+                                        <select id="durationHourAdd" name="durationHourAdd" class="modalopt">
+                                            <option value="0" selected="yes"></option>
+                                            <option value="60">1</option>
+                                            <option value="120">2</option>
+                                            <option value="180">3</option>
+                                            <option value="240">4</option>
+                                            <option value="300">5</option>
+                                            <option value="360">6</option>
+                                            <option value="420">7</option>
+                                            <option value="480">8</option>
+                                        </select>
+                                        <select id="durationMinuteAdd" name="durationMinuteAdd" class="modalopt">
+                                            <option value="0" selected="yes"></option>
+                                            <option value="0">00</option>
+                                            <option value="30">30</option>
+                                            <option value="" disabled="yes">-----</option>
+                                            <option value="1">01</option>
+                                            <option value="2">02</option>
+                                            <option value="3">03</option>
+                                            <option value="4">04</option>
+                                            <option value="5">05</option>
+                                            <option value="6">06</option>
+                                            <option value="7">07</option>
+                                            <option value="8">08</option>
+                                            <option value="9">09</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                            <option value="13">13</option>
+                                            <option value="14">14</option>
+                                            <option value="15">15</option>
+                                            <option value="16">16</option>
+                                            <option value="17">17</option>
+                                            <option value="18">18</option>
+                                            <option value="19">19</option>
+                                            <option value="20">20</option>
+                                            <option value="21">21</option>
+                                            <option value="22">22</option>
+                                            <option value="23">23</option>
+                                            <option value="24">24</option>
+                                            <option value="25">25</option>
+                                            <option value="26">26</option>
+                                            <option value="27">27</option>
+                                            <option value="28">28</option>
+                                            <option value="29">29</option>
+                                            <option value="31">31</option>
+                                            <option value="32">32</option>
+                                            <option value="33">33</option>
+                                            <option value="34">34</option>
+                                            <option value="35">35</option>
+                                            <option value="36">36</option>
+                                            <option value="37">37</option>
+                                            <option value="38">38</option>
+                                            <option value="39">39</option>
+                                            <option value="40">40</option>
+                                            <option value="41">41</option>
+                                            <option value="42">42</option>
+                                            <option value="43">43</option>
+                                            <option value="44">44</option>
+                                            <option value="45">45</option>
+                                            <option value="46">46</option>
+                                            <option value="47">47</option>
+                                            <option value="48">48</option>
+                                            <option value="49">49</option>
+                                            <option value="50">50</option>
+                                            <option value="51">51</option>
+                                            <option value="52">52</option>
+                                            <option value="53">53</option>
+                                            <option value="54">54</option>
+                                            <option value="55">55</option>
+                                            <option value="56">56</option>
+                                            <option value="57">57</option>
+                                            <option value="58">58</option>
+                                            <option value="59">59</option>
+                                        </select>                                   
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12"><span class="modaltxt">Is Calendar Event :</span>
+                                    <input id="isCalendarEventAdd" name="isCalendarEventAdd" type="checkbox" />                                 
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12"><span class="modaltxt">Comments :</span>
+                                    <textarea class="form-control" rows="3" name="commentsAdd" id="commentsAdd"></textarea>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="stopIdAdd" id="stopIdAdd" readonly="true" />
+                            </div>
+                            <div class="modal-footer">
+                                
+                                <apex:commandButton styleClass="buttonclr btnCreate" value="Create" id="btnCreate" reRender="route"/>
+                                <button type="button" class="buttonclr" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" name="modalAddDialog">
+                        <div class="modal-bg">
+                            <button id= "btnClose" type="button" class="modalclose" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            <h3 class="modal-title" id="myModalLabel">Edit Stop Information</h3>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <p class="validateTips"></p>
+                                        <span class="modaltxt1" name="name" id="name">
+                                            <input type="text" name="name1" id="name1" readonly="true" style="font-weight:bold; border:none; background-color:transparent;" />
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <span class="modaltxt">Estimated Arrival :</span>
+                                        <select id="startHour" name="startHour" class="modalopt">
+                                            <option value="xxx" selected="yes">Timeless</option>
+                                            <option value="480">8 AM</option>
+                                            <option value="540">9 AM</option>
+                                            <option value="600">10 AM</option>
+                                            <option value="660">11 AM</option>
+                                            <option value="720">12 PM</option>
+                                            <option value="780">1 PM</option>
+                                            <option value="840">2 PM</option>
+                                            <option value="900">3 PM</option>
+                                            <option value="960">4 PM</option>
+                                            <option value="1020">5 PM</option>
+                                            <option value="1080">6 PM</option>
+                                            <option value="1140">7 PM</option>
+                                            <option value="1200">8 PM</option>
+                                            <option value="1260">9 PM</option>
+                                            <option value="1320">10 PM</option>
+                                            <option value="1380">11 PM</option>
+                                            <option value="0">12 AM</option>
+                                            <option value="60">1 AM</option>
+                                            <option value="120">2 AM</option>
+                                            <option value="180">3 AM</option>
+                                            <option value="240">4 AM</option>
+                                            <option value="300">5 AM</option>
+                                            <option value="360">6 AM</option>
+                                            <option value="420">7 AM</option>
+                                        </select>                                   
+                                        <span>:</span>
+                                        <select id="startMinute" name="startMinute" class="modalopt">
+                                            <option value="xxx" selected="yes"></option>
+                                            <option value="0">00</option>
+                                            <option value="30">30</option>
+                                            <option value="" disabled="yes">-----</option>
+                                            <option value="1">01</option>
+                                            <option value="2">02</option>
+                                            <option value="3">03</option>
+                                            <option value="4">04</option>
+                                            <option value="5">05</option>
+                                            <option value="6">06</option>
+                                            <option value="7">07</option>
+                                            <option value="8">08</option>
+                                            <option value="9">09</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                            <option value="13">13</option>
+                                            <option value="14">14</option>
+                                            <option value="15">15</option>
+                                            <option value="16">16</option>
+                                            <option value="17">17</option>
+                                            <option value="18">18</option>
+                                            <option value="19">19</option>
+                                            <option value="20">20</option>
+                                            <option value="21">21</option>
+                                            <option value="22">22</option>
+                                            <option value="23">23</option>
+                                            <option value="24">24</option>
+                                            <option value="25">25</option>
+                                            <option value="26">26</option>
+                                            <option value="27">27</option>
+                                            <option value="28">28</option>
+
+                                            <option value="29">29</option>
+                                            <option value="31">31</option>
+                                            <option value="32">32</option>
+                                            <option value="33">33</option>
+                                            <option value="34">34</option>
+                                            <option value="35">35</option>
+                                            <option value="36">36</option>
+                                            <option value="37">37</option>
+                                            <option value="38">38</option>
+                                            <option value="39">39</option>
+                                            <option value="40">40</option>
+                                            <option value="41">41</option>
+                                            <option value="42">42</option>
+                                            <option value="43">43</option>
+                                            <option value="44">44</option>
+                                            <option value="45">45</option>
+                                            <option value="46">46</option>
+                                            <option value="47">47</option>
+                                            <option value="48">48</option>
+                                            <option value="49">49</option>
+                                            <option value="50">50</option>
+                                            <option value="51">51</option>
+                                            <option value="52">52</option>
+                                            <option value="53">53</option>
+                                            <option value="54">54</option>
+                                            <option value="55">55</option>
+                                            <option value="56">56</option>
+                                            <option value="57">57</option>
+                                            <option value="58">58</option>
+                                            <option value="59">59</option>
+                                        </select>                                   
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <span class="modaltxt">Duration :</span>
+                                        <select id="durationHour" name="durationHour" class="modalopt">
+                                            <option value="0" selected="yes"></option>
+                                            <option value="60">1</option>
+                                            <option value="120">2</option>
+                                            <option value="180">3</option>
+                                            <option value="240">4</option>
+                                            <option value="300">5</option>
+                                            <option value="360">6</option>
+                                            <option value="420">7</option>
+                                            <option value="480">8</option>
+                                        </select>                                   
+                                        <span>:</span>
+                                        <select id="durationMinute" name="durationMinute" class="modalopt">
+                                            <option value="0" selected="yes"></option>
+                                            <option value="0">00</option>
+                                            <option value="30">30</option>
+                                            <option value="" disabled="yes">-----</option>
+                                            <option value="1">01</option>
+                                            <option value="2">02</option>
+                                            <option value="3">03</option>
+                                            <option value="4">04</option>
+                                            <option value="5">05</option>
+                                            <option value="6">06</option>
+                                            <option value="7">07</option>
+                                            <option value="8">08</option>
+                                            <option value="9">09</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                            <option value="13">13</option>
+                                            <option value="14">14</option>
+                                            <option value="15">15</option>
+                                            <option value="16">16</option>
+                                            <option value="17">17</option>
+                                            <option value="18">18</option>
+                                            <option value="19">19</option>
+                                            <option value="20">20</option>
+                                            <option value="21">21</option>
+                                            <option value="22">22</option>
+                                            <option value="23">23</option>
+                                            <option value="24">24</option>
+                                            <option value="25">25</option>
+                                            <option value="26">26</option>
+                                            <option value="27">27</option>
+                                            <option value="28">28</option>
+                                            <option value="29">29</option>
+                                            <option value="31">31</option>
+                                            <option value="32">32</option>
+                                            <option value="33">33</option>
+                                            <option value="34">34</option>
+                                            <option value="35">35</option>
+                                            <option value="36">36</option>
+                                            <option value="37">37</option>
+                                            <option value="38">38</option>
+                                            <option value="39">39</option>
+                                            <option value="40">40</option>
+                                            <option value="41">41</option>
+                                            <option value="42">42</option>
+                                            <option value="43">43</option>
+                                            <option value="44">44</option>
+                                            <option value="45">45</option>
+                                            <option value="46">46</option>
+                                            <option value="47">47</option>
+                                            <option value="48">48</option>
+                                            <option value="49">49</option>
+                                            <option value="50">50</option>
+                                            <option value="51">51</option>
+                                            <option value="52">52</option>
+                                            <option value="53">53</option>
+                                            <option value="54">54</option>
+                                            <option value="55">55</option>
+                                            <option value="56">56</option>
+                                            <option value="57">57</option>
+                                            <option value="58">58</option>
+                                            <option value="59">59</option>
+                                        </select>                                   
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12"><span class="modaltxt mychkbox">Is Calendar Event :</span>
+                                    <input id="isCalendarEvent" name="isCalendarEvent" type="checkbox"/>                                        
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12"><span class="modaltxt">Comments :</span>
+                                    <textarea class="form-control" rows="3"  name="comments" id="comments"></textarea>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="stopId" id="stopId" readonly="true" />
+                            </div>
+                            <div class="modal-footer">
+                                 <apex:commandButton styleClass="buttonclr btnSave" value="Save" id="btnSave" reRender="route"/>
+                                <button type="button" class="buttonclr" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <!--End of Modal-->
+            </div>
+        </body>
+    </apex:form>
+    <apex:outputPanel id="directions">
+        <form id="gmroute" method="get" target="_blank" action="https://maps.google.com/maps">      
+        
+            <apex:repeat id="stopsId" value="{!GoogleMapRouteStops}" var="s">
+                <input type="hidden" name="{!s.Name}" value="{!s.Address}"/>
+            </apex:repeat>
+        </form>
+    </apex:outputPanel>
+</apex:page>

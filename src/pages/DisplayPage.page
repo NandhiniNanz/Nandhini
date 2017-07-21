@@ -1,0 +1,8 @@
+<apex:page Controller="Reqrecords"  >
+<apex:form >
+<apex:pageBlock title="Records">
+<apex:commandButton action="{!redirectToVfpage}" value="Display"/>
+
+</apex:pageBlock>
+</apex:form>
+</apex:page>

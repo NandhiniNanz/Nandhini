@@ -1,0 +1,23 @@
+<apex:page controller="accountType">
+    <apex:form id="form">
+    <apex:pageBlock >
+    <apex:pageBlockSection >
+    <apex:outputLabel value="Choose the Type">
+        
+        <apex:selectList value="{!type}" size="1" >
+            
+             <apex:selectOption itemValue="None" itemLabel="-None-"/>
+            <apex:selectOption itemValue="Customer - Direct" itemLabel="Customer-Direct"/>
+            <apex:selectOption itemValue="Customer - Channel" itemLabel="Customer-Channel"/>
+            <apex:selectOption itemValue="Installation Partner" itemLabel="Installation Partner"/>
+            <apex:selectOption itemValue="Technology Partner" itemLabel="Technology Partner"/>
+            <apex:actionSupport event="onchange" action="{!type}" rerender="form"/>
+        </apex:selectList>  
+        </apex:outputLabel>
+        <apex:dataList var="acc" value="{!listacc}">
+        {!acc.Name}
+        </apex:dataList>
+        </apex:pageBlockSection>
+        </apex:pageBlock>  
+    </apex:form>
+</apex:page>

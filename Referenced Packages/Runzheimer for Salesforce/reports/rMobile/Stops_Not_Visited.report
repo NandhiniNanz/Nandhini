@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <columns>
+        <field>Itinerary__c.Date__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.Location_Name__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.LocationId__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.Location_Type__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.Address__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.Calendar_Event__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.Duration__c</field>
+    </columns>
+    <columns>
+        <field>Stop__c.Expected_Arrival_Time__c</field>
+    </columns>
+    <description>This is not a stand-alone report – use the Planned Stops vs. Actual Trips report to access this report</description>
+    <filter>
+        <criteriaItems>
+            <column>CUST_ID</column>
+            <operator>equals</operator>
+            <value>a00i000000mY6MM</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>Stop__c.IsStopVisited__c</column>
+            <operator>equals</operator>
+            <value>0</value>
+        </criteriaItems>
+    </filter>
+    <format>Tabular</format>
+    <name>Stops Not Visited</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>CustomEntityCustomEntity$Itinerary__c$Stop__c</reportType>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <timeFrameFilter>
+        <dateColumn>Itinerary__c.Date__c</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>
